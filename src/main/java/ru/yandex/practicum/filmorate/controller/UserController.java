@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -44,16 +46,18 @@ public class UserController {
 
             newUser.setId(getNextId());
 
-            if (newUser.getName() != null && newUser.getName().isBlank()) {
+            if (newUser.getName() == null || newUser.getName().isBlank()) {
                 newUser.setName(newUser.getLogin());
             }
+
+            users.put(newUser.getId(), newUser);
+            log.info("В системе зарегистрирован новый пользователь с логином: {}", newUser.getLogin());
+            return newUser;
+
         } catch (Exception e) {
             log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
-
-        users.put(newUser.getId(), newUser);
-        log.info("В системе зарегистрирован новый пользователь с логином: {}", newUser.getLogin());
-        return newUser;
     }
 
     @PutMapping
@@ -78,8 +82,8 @@ public class UserController {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
-        return oldUser;
     }
 
 
@@ -92,5 +96,9 @@ public class UserController {
         return ++currentMaxId;
     }
 
+    //для тестов - временная мера
+    public Collection<User> getSavedUsers() {
+        return this.users.values();
+    }
 
 }

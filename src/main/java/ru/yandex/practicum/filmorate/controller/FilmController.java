@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
@@ -27,7 +29,7 @@ public class FilmController {
     @PostMapping
     public Film add(@RequestBody Film newFilm) {
         try {
-            if (newFilm.getName() == null) {
+            if (newFilm.getName() == null || newFilm.getName().isBlank()) {
                 throw new ValidationException("Название добавляемого фильма не должно быть пустым");
             }
 
@@ -39,31 +41,31 @@ public class FilmController {
                 throw new ValidationException("Добавляемый фильм не мог выйти в прокат до создания кинематографа");
             }
 
-            if (newFilm.getDuration().toSeconds() < 0) {
+            if (newFilm.getDuration() <= 0) {
                 throw new ValidationException("продолжительность добавляемого фильма должна быть положительным числом");
             }
 
             newFilm.setId(getNextId());
+            films.put(newFilm.getId(), newFilm);
+            log.info("В систему добавлен новый фильм под названием: {}", newFilm.getName());
+            return newFilm;
+
         } catch (Exception e) {
             log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
-
-        films.put(newFilm.getId(), newFilm);
-        log.info("В систему добавлен новый фильм под названием: {}", newFilm.getName());
-        return newFilm;
     }
 
 
     @PutMapping
     public Film update(@RequestBody Film updatedFilm) {
-        Film oldFilm = null;
         try {
             if (updatedFilm.getId() == null) {
                 throw new ValidationException("Id должен быть указан");
             }
 
             if (films.containsKey(updatedFilm.getId())) {
-                oldFilm = films.get(updatedFilm.getId());
+                Film oldFilm = films.get(updatedFilm.getId());
 
                 oldFilm.setName(updatedFilm.getName());
                 oldFilm.setDescription(updatedFilm.getDescription());
@@ -76,8 +78,8 @@ public class FilmController {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
-        return oldFilm;
     }
 
 
@@ -89,4 +91,10 @@ public class FilmController {
                 .orElse(0);
         return ++currentMaxId;
     }
+
+    //для тестов - временная мера
+    public Collection<Film> getSavedFilms() {
+        return this.films.values();
+    }
+
 }
