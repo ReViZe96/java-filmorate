@@ -13,7 +13,7 @@ public class FilmControllerTest {
 
     @Test
     public void shouldAddedFilm() {
-        Film MrNobody = Film.builder()
+        Film mrNobody = Film.builder()
                 .name("Господин Никто")
                 .description("Хороший фильм")
                 .releaseDate(LocalDate.of(2009, 9, 18))
@@ -21,9 +21,9 @@ public class FilmControllerTest {
                 .build();
 
         Assertions.assertTrue(filmController.getSavedFilms().isEmpty());
-        Assertions.assertDoesNotThrow(() -> filmController.add(MrNobody));
+        Assertions.assertDoesNotThrow(() -> filmController.add(mrNobody));
         Assertions.assertEquals(filmController.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmController.getSavedFilms().contains(MrNobody));
+        Assertions.assertTrue(filmController.getSavedFilms().contains(mrNobody));
     }
 
     @Test
