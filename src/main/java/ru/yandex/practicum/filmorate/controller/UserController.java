@@ -16,7 +16,7 @@ import java.util.HashMap;
 @RequestMapping("users")
 public class UserController {
 
-    private final static Logger log = LoggerFactory.getLogger(UserController.class);
+    private final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private HashMap<Long, User> users = new HashMap<>();
 

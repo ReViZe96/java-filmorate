@@ -16,7 +16,7 @@ import java.util.HashMap;
 @RequestMapping("films")
 public class FilmController {
 
-    private final static Logger log = LoggerFactory.getLogger(FilmController.class);
+    private final Logger log = LoggerFactory.getLogger(FilmController.class);
 
     private HashMap<Long, Film> films = new HashMap<>();
     private LocalDate mostEarlierReleaseDate = LocalDate.of(1895, 12, 28);
