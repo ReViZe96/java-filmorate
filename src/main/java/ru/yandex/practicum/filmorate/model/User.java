@@ -9,10 +9,10 @@ import java.time.LocalDate;
 @Builder
 public class User {
 
-    protected Long id;
-    protected String email;
-    protected String login;
-    protected String name;
-    protected LocalDate birthday;
+    private Long id;
+    private String email;
+    private String login;
+    private String name;
+    private LocalDate birthday;
 
 }

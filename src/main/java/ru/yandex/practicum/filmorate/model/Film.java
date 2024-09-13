@@ -9,10 +9,10 @@ import java.time.LocalDate;
 @Builder
 public class Film {
 
-    protected Long id;
-    protected String name;
-    protected String description;
-    protected LocalDate releaseDate;
-    protected Long duration;
+    private Long id;
+    private String name;
+    private String description;
+    private LocalDate releaseDate;
+    private Long duration;
 
 }

@@ -29,26 +29,14 @@ public class FilmController {
     @PostMapping
     public Film add(@RequestBody Film newFilm) {
         try {
-            if (newFilm.getName() == null || newFilm.getName().isBlank()) {
-                throw new ValidationException("Название добавляемого фильма не должно быть пустым");
+            boolean isFilmValid = isFilmValid(newFilm);
+            if (isFilmValid) {
+                newFilm.setId(getNextId());
+                films.put(newFilm.getId(), newFilm);
+                log.info("В систему добавлен новый фильм под названием: {}", newFilm.getName());
             }
-
-            if (newFilm.getDescription().length() > 200) {
-                throw new ValidationException("Превышена максимальная длина описания добавляемого фильма");
-            }
-
-            if (newFilm.getReleaseDate().isBefore(mostEarlierReleaseDate)) {
-                throw new ValidationException("Добавляемый фильм не мог выйти в прокат до создания кинематографа");
-            }
-
-            if (newFilm.getDuration() <= 0) {
-                throw new ValidationException("продолжительность добавляемого фильма должна быть положительным числом");
-            }
-
-            newFilm.setId(getNextId());
-            films.put(newFilm.getId(), newFilm);
-            log.info("В систему добавлен новый фильм под названием: {}", newFilm.getName());
             return newFilm;
+
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -80,8 +68,24 @@ public class FilmController {
             log.error(e.getMessage());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
+
     }
 
+    private boolean isFilmValid(Film film) throws ValidationException {
+        if (film.getName() == null || film.getName().isBlank()) {
+            throw new ValidationException("Название добавляемого фильма не должно быть пустым");
+        }
+        if (film.getDescription().length() > 200) {
+            throw new ValidationException("Превышена максимальная длина описания добавляемого фильма");
+        }
+        if (film.getReleaseDate().isBefore(mostEarlierReleaseDate)) {
+            throw new ValidationException("Добавляемый фильм не мог выйти в прокат до создания кинематографа");
+        }
+        if (film.getDuration() <= 0) {
+            throw new ValidationException("продолжительность добавляемого фильма должна быть положительным числом");
+        }
+        return true;
+    }
 
     private long getNextId() {
         long currentMaxId = films.keySet()

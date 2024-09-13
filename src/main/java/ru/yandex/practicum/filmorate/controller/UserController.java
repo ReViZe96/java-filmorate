@@ -27,31 +27,18 @@ public class UserController {
 
     @PostMapping
     public User create(@RequestBody User newUser) {
-        String newUsersEmail = newUser.getEmail();
-        String newUsersLogin = newUser.getLogin();
-
         try {
-            if (newUsersEmail == null || newUsersEmail.isBlank() || !newUsersEmail.contains("@")) {
-                throw new ValidationException("Электронная почта создаваемого пользователя не может быть пустой " +
-                        "и должна содержать символ @");
+            boolean isUserValid = isUserValid(newUser);
+            if (isUserValid) {
+                newUser.setId(getNextId());
+
+                if (newUser.getName() == null || newUser.getName().isBlank()) {
+                    newUser.setName(newUser.getLogin());
+                }
+
+                users.put(newUser.getId(), newUser);
+                log.info("В системе зарегистрирован новый пользователь с логином: {}", newUser.getLogin());
             }
-
-            if (newUsersLogin == null || newUsersLogin.isBlank() || newUsersLogin.contains(" ")) {
-                throw new ValidationException("Логин создаваемого пользователя не может быть пустым и содержать пробелы");
-            }
-
-            if (newUser.getBirthday().isAfter(LocalDate.now())) {
-                throw new ValidationException("Дата рождения создаваемого пользователя не может быть в будущем");
-            }
-
-            newUser.setId(getNextId());
-
-            if (newUser.getName() == null || newUser.getName().isBlank()) {
-                newUser.setName(newUser.getLogin());
-            }
-
-            users.put(newUser.getId(), newUser);
-            log.info("В системе зарегистрирован новый пользователь с логином: {}", newUser.getLogin());
             return newUser;
 
         } catch (Exception e) {
@@ -86,6 +73,24 @@ public class UserController {
         }
     }
 
+
+    private boolean isUserValid(User user) throws ValidationException {
+        String newUsersEmail = user.getEmail();
+        String newUsersLogin = user.getLogin();
+        if (newUsersEmail == null || newUsersEmail.isBlank() || !newUsersEmail.contains("@")) {
+            throw new ValidationException("Электронная почта создаваемого пользователя не может быть пустой " +
+                    "и должна содержать символ @");
+        }
+
+        if (newUsersLogin == null || newUsersLogin.isBlank() || newUsersLogin.contains(" ")) {
+            throw new ValidationException("Логин создаваемого пользователя не может быть пустым и содержать пробелы");
+        }
+
+        if (user.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("Дата рождения создаваемого пользователя не может быть в будущем");
+        }
+        return true;
+    }
 
     private long getNextId() {
         long currentMaxId = users.keySet()
