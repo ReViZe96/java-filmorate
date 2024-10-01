@@ -1,8 +1,8 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.FriendsManipulationException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -18,16 +18,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final Logger log = LoggerFactory.getLogger(UserService.class);
 
-    private UserStorage userStorage;
-
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
+    private final UserStorage userStorage;
 
 
     public Collection<User> getAllUsers() {
@@ -84,40 +80,12 @@ public class UserService {
     }
 
     public User addToFriends(Long id, Long friendId) {
-        if (id == null) {
-            throw new ValidationException("Id пользователя, добавляющего в друзья, должен быть указан");
-        }
-        if (friendId == null) {
-            throw new ValidationException("Id пользователя, добавляемого в друзья, должен быть указан");
-        }
-        if (!userStorage.isUserExist(id)) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        if (!userStorage.isUserExist(friendId)) {
-            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-        }
-        Set<Long> firstUserFriendsIds = userStorage.getUserFriendsIds(id);
-        Set<Long> secondUserFriendsIds = userStorage.getUserFriendsIds(friendId);
-        if (firstUserFriendsIds.contains(friendId) || secondUserFriendsIds.contains(friendId)) {
-            throw new FriendsManipulationException("Пользователи уже являются друзьями");
-        }
+        isUsersCanBeAddedToFriend(id, friendId);
         return userStorage.addFriend(id, friendId);
     }
 
     public void deleteFromFriends(Long id, Long friendId) {
-        if (id == null) {
-            throw new ValidationException("Id пользователя, расторгающего дружбу, должен быть указан");
-        }
-        if (friendId == null) {
-
-            throw new ValidationException("Id пользователя, удаляемого из друзей, должен быть указан");
-        }
-        if (!userStorage.isUserExist(id)) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        if (!userStorage.isUserExist(friendId)) {
-            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-        }
+        isUsersCanBeRemovedFromFriend(id, friendId);
         Set<Long> firstUserFriendsIds = userStorage.getUserFriendsIds(id);
         Set<Long> secondUserFriendsIds = userStorage.getUserFriendsIds(friendId);
         if (firstUserFriendsIds.contains(friendId)) {
@@ -130,27 +98,14 @@ public class UserService {
     }
 
     public Set<User> getUserFriends(Long id) {
-        if (id == null) {
-            throw new ValidationException("Id пользователя, должен быть указан");
-        }
-        if (!userStorage.isUserExist(id)) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
+        canGetUserFriends(id);
         Set<Long> friendsIds = userStorage.getUserFriendsIds(id);
         log.info("Список друзей пользователя с id = {}: {}", id, friendsIds);
         return friendsIds.stream().map(f -> userStorage.getUserById(f).get()).collect(Collectors.toSet());
     }
 
     public Set<User> getCommonFriends(Long id, Long otherId) {
-        if (id == null || otherId == null) {
-            throw new FriendsManipulationException("Id одного из пользователей не указан");
-        }
-        if (!userStorage.isUserExist(id)) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        if (!userStorage.isUserExist(otherId)) {
-            throw new NotFoundException("Пользователь с id = " + otherId + " не найден");
-        }
+        canGetCommonFriends(id, otherId);
         Set<Long> firstUserFirendIds = userStorage.getUserFriendsIds(id);
         Set<Long> secondUserFriendIds = userStorage.getUserFriendsIds(otherId);
         firstUserFirendIds.retainAll(secondUserFriendIds);
@@ -171,6 +126,67 @@ public class UserService {
         }
         if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Дата рождения создаваемого пользователя не может быть в будущем");
+        }
+        return true;
+    }
+
+    private boolean isUsersCanBeAddedToFriend(Long id, Long friendId) {
+        if (id == null) {
+            throw new ValidationException("Id пользователя, добавляющего в друзья, должен быть указан");
+        }
+        if (friendId == null) {
+            throw new ValidationException("Id пользователя, добавляемого в друзья, должен быть указан");
+        }
+        if (!userStorage.isUserExist(id)) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        if (!userStorage.isUserExist(friendId)) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
+        Set<Long> firstUserFriendsIds = userStorage.getUserFriendsIds(id);
+        Set<Long> secondUserFriendsIds = userStorage.getUserFriendsIds(friendId);
+        if (firstUserFriendsIds.contains(friendId) || secondUserFriendsIds.contains(friendId)) {
+            throw new FriendsManipulationException("Пользователи уже являются друзьями");
+        }
+        return true;
+    }
+
+    private boolean isUsersCanBeRemovedFromFriend(Long id, Long friendId) {
+        if (id == null) {
+            throw new ValidationException("Id пользователя, расторгающего дружбу, должен быть указан");
+        }
+        if (friendId == null) {
+
+            throw new ValidationException("Id пользователя, удаляемого из друзей, должен быть указан");
+        }
+        if (!userStorage.isUserExist(id)) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        if (!userStorage.isUserExist(friendId)) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
+        return true;
+    }
+
+    private boolean canGetUserFriends(Long id) {
+        if (id == null) {
+            throw new ValidationException("Id пользователя, должен быть указан");
+        }
+        if (!userStorage.isUserExist(id)) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        return true;
+    }
+
+    private boolean canGetCommonFriends(Long id, Long otherId) {
+        if (id == null || otherId == null) {
+            throw new FriendsManipulationException("Id одного из пользователей не указан");
+        }
+        if (!userStorage.isUserExist(id)) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        if (!userStorage.isUserExist(otherId)) {
+            throw new NotFoundException("Пользователь с id = " + otherId + " не найден");
         }
         return true;
     }
