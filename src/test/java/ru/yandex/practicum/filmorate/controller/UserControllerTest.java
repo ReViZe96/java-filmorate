@@ -2,14 +2,19 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 public class UserControllerTest {
 
-    UserController userController = new UserController();
+    InMemoryUserStorage userStorage = new InMemoryUserStorage();
+    UserService userService = new UserService(userStorage);
+    UserController userController = new UserController(userService);
 
     @Test
     public void shouldCreatedUser() {
@@ -18,12 +23,13 @@ public class UserControllerTest {
                 .login("RVZ")
                 .name("Artem")
                 .birthday(LocalDate.of(1996, 5, 10))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertTrue(userController.getSavedUsers().isEmpty());
-        Assertions.assertDoesNotThrow(() -> userController.create(correctUser));
-        Assertions.assertEquals(userController.getSavedUsers().size(), 1);
-        Assertions.assertTrue(userController.getSavedUsers().contains(correctUser));
+        Assertions.assertTrue(userStorage.getSavedUsers().isEmpty());
+        Assertions.assertDoesNotThrow(() -> userController.createUser(correctUser));
+        Assertions.assertEquals(userStorage.getSavedUsers().size(), 1);
+        Assertions.assertTrue(userStorage.getSavedUsers().contains(correctUser));
     }
 
     @Test
@@ -33,24 +39,27 @@ public class UserControllerTest {
                 .login("firstUser")
                 .name("First")
                 .birthday(LocalDate.of(1991, 1, 1))
+                .friends(new HashSet<>())
                 .build();
         User userWithEmptyEmail = User.builder()
                 .email("")
                 .login("secondUser")
                 .name("Second")
                 .birthday(LocalDate.of(1992, 2, 2))
+                .friends(new HashSet<>())
                 .build();
         User userWithNotCorrectEmail = User.builder()
                 .email("thirdUser.com")
                 .login("@-hater")
                 .name("NotEmailButWebSite")
                 .birthday(LocalDate.of(1993, 3, 3))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithoutEmail));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithEmptyEmail));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithNotCorrectEmail));
-        Assertions.assertTrue(userController.getSavedUsers().isEmpty());
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithoutEmail));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithEmptyEmail));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithNotCorrectEmail));
+        Assertions.assertTrue(userStorage.getSavedUsers().isEmpty());
     }
 
     @Test
@@ -60,24 +69,27 @@ public class UserControllerTest {
                 .login(null)
                 .name("WithoutLogin")
                 .birthday(LocalDate.of(1994, 4, 4))
+                .friends(new HashSet<>())
                 .build();
         User userWithEmptyLogin = User.builder()
                 .email("withEmptyLogin@yahoo.com")
                 .login("")
                 .name("WithEmptyLogin")
                 .birthday(LocalDate.of(1995, 5, 5))
+                .friends(new HashSet<>())
                 .build();
         User userWithWhitespaceContainedLogin = User.builder()
                 .email("whitespace_contain@mail.ru")
                 .login("whitespace contain")
                 .name("Василий Петрович")
                 .birthday(LocalDate.of(1996, 6, 6))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithoutLogin));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithEmptyLogin));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userWithWhitespaceContainedLogin));
-        Assertions.assertTrue(userController.getSavedUsers().isEmpty());
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithoutLogin));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithEmptyLogin));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userWithWhitespaceContainedLogin));
+        Assertions.assertTrue(userStorage.getSavedUsers().isEmpty());
     }
 
     @Test
@@ -87,10 +99,11 @@ public class UserControllerTest {
                 .login("NotBornedYet")
                 .name("PreChildren")
                 .birthday(LocalDate.of(2999, 12, 12))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.create(userThatNotBornYet));
-        Assertions.assertTrue(userController.getSavedUsers().isEmpty());
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.createUser(userThatNotBornYet));
+        Assertions.assertTrue(userStorage.getSavedUsers().isEmpty());
     }
 
     @Test
@@ -100,20 +113,22 @@ public class UserControllerTest {
                 .login("withoutName")
                 .name(null)
                 .birthday(LocalDate.of(1997, 7, 7))
+                .friends(new HashSet<>())
                 .build();
         User userWithEmptyName = User.builder()
                 .email("withEmptyName@yahoo.com")
                 .login("withEmptyName")
                 .name("")
                 .birthday(LocalDate.of(1998, 8, 8))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertTrue(userController.getSavedUsers().isEmpty());
-        Assertions.assertDoesNotThrow(() -> userController.create(userWithoutName));
-        Assertions.assertDoesNotThrow(() -> userController.create(userWithEmptyName));
-        Assertions.assertEquals(userController.getSavedUsers().size(), 2);
-        Assertions.assertTrue(userController.getSavedUsers().contains(userWithoutName));
-        Assertions.assertTrue(userController.getSavedUsers().contains(userWithEmptyName));
+        Assertions.assertTrue(userStorage.getSavedUsers().isEmpty());
+        Assertions.assertDoesNotThrow(() -> userController.createUser(userWithoutName));
+        Assertions.assertDoesNotThrow(() -> userController.createUser(userWithEmptyName));
+        Assertions.assertEquals(userStorage.getSavedUsers().size(), 2);
+        Assertions.assertTrue(userStorage.getSavedUsers().contains(userWithoutName));
+        Assertions.assertTrue(userStorage.getSavedUsers().contains(userWithEmptyName));
     }
 
     @Test
@@ -123,9 +138,10 @@ public class UserControllerTest {
                 .login("creatingUser")
                 .name("CreatingUser")
                 .birthday(LocalDate.of(1999, 9, 9))
+                .friends(new HashSet<>())
                 .build();
 
-        User createdUser = userController.create(creatingUser);
+        User createdUser = userController.createUser(creatingUser);
 
         User updatingUser = User.builder()
                 .id(createdUser.getId())
@@ -133,14 +149,15 @@ public class UserControllerTest {
                 .login("updatingUser")
                 .name("UpdatingUser")
                 .birthday(LocalDate.of(2000, 10, 10))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertEquals(userController.getSavedUsers().size(), 1);
-        Assertions.assertTrue(userController.getSavedUsers().contains(createdUser));
+        Assertions.assertEquals(userStorage.getSavedUsers().size(), 1);
+        Assertions.assertTrue(userStorage.getSavedUsers().contains(createdUser));
 
-        Assertions.assertDoesNotThrow(() -> userController.update(updatingUser));
-        Assertions.assertEquals(userController.getSavedUsers().size(), 1);
-        Assertions.assertTrue(userController.getSavedUsers().contains(updatingUser));
+        Assertions.assertDoesNotThrow(() -> userController.updateUser(updatingUser));
+        Assertions.assertEquals(userStorage.getSavedUsers().size(), 1);
+        Assertions.assertTrue(userStorage.getSavedUsers().contains(updatingUser));
     }
 
     @Test
@@ -150,9 +167,10 @@ public class UserControllerTest {
                 .login("userWithoutId")
                 .name("UserWithoutId")
                 .birthday(LocalDate.of(2001, 11, 11))
+                .friends(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> userController.update(userWithoutId));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> userController.updateUser(userWithoutId));
     }
 
 }

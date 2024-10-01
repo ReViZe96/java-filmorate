@@ -1,109 +1,58 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
-import java.time.LocalDate;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Set;
 
 @RestController
 @RequestMapping("users")
+@RequiredArgsConstructor
 public class UserController {
 
-    private final Logger log = LoggerFactory.getLogger(UserController.class);
-
-    private HashMap<Long, User> users = new HashMap<>();
+    private final UserService userService;
 
     @GetMapping
-    public Collection<User> getAll() {
-        return users.values();
+    public Collection<User> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
     }
 
     @PostMapping
-    public User create(@RequestBody User newUser) {
-        try {
-            boolean isUserValid = isUserValid(newUser);
-            if (isUserValid) {
-                newUser.setId(getNextId());
-
-                if (newUser.getName() == null || newUser.getName().isBlank()) {
-                    newUser.setName(newUser.getLogin());
-                }
-
-                users.put(newUser.getId(), newUser);
-                log.info("В системе зарегистрирован новый пользователь с логином: {}", newUser.getLogin());
-            }
-            return newUser;
-
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+    public User createUser(@RequestBody User newUser) {
+        return userService.createUser(newUser);
     }
 
     @PutMapping
-    public User update(@RequestBody User updatedUser) {
-        User oldUser = null;
-        try {
-            if (updatedUser.getId() == null) {
-                throw new ValidationException("Id должен быть указан");
-            }
-
-            if (users.containsKey(updatedUser.getId())) {
-                oldUser = users.get(updatedUser.getId());
-
-                oldUser.setEmail(updatedUser.getEmail());
-                oldUser.setLogin(updatedUser.getLogin());
-                oldUser.setName(updatedUser.getName());
-                oldUser.setBirthday(updatedUser.getBirthday());
-                log.info("В системе обновлены данные о пользователе с логином: {}", updatedUser.getLogin());
-                return oldUser;
-            } else {
-                throw new ValidationException("Пользователь с id = " + updatedUser.getId() + " не найден");
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
+    public User updateUser(@RequestBody User updatedUser) {
+        return userService.updateUser(updatedUser);
     }
 
-
-    private boolean isUserValid(User user) throws ValidationException {
-        String newUsersEmail = user.getEmail();
-        String newUsersLogin = user.getLogin();
-        if (newUsersEmail == null || newUsersEmail.isBlank() || !newUsersEmail.contains("@")) {
-            throw new ValidationException("Электронная почта создаваемого пользователя не может быть пустой " +
-                    "и должна содержать символ @");
-        }
-
-        if (newUsersLogin == null || newUsersLogin.isBlank() || newUsersLogin.contains(" ")) {
-            throw new ValidationException("Логин создаваемого пользователя не может быть пустым и содержать пробелы");
-        }
-
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения создаваемого пользователя не может быть в будущем");
-        }
-        return true;
+    @PutMapping("/{id}/friends/{friendId}")
+    public User addToFriends(@PathVariable Long id, @PathVariable Long friendId) {
+        return userService.addToFriends(id, friendId);
     }
 
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFromFriends(@PathVariable Long id, @PathVariable Long friendId) {
+        userService.deleteFromFriends(id, friendId);
     }
 
-    //для тестов - временная мера
-    public Collection<User> getSavedUsers() {
-        return this.users.values();
+    @GetMapping("/{id}/friends")
+    public Set<User> getUserFriends(@PathVariable Long id) {
+        return userService.getUserFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public Set<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
+        return userService.getCommonFriends(id, otherId);
     }
 
 }

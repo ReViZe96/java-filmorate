@@ -2,14 +2,21 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 public class FilmControllerTest {
 
-    private FilmController filmController = new FilmController();
+    private InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
+    private InMemoryUserStorage userStorage = new InMemoryUserStorage();
+    private FilmService filmService = new FilmService(filmStorage, userStorage);
+    private FilmController filmController = new FilmController(filmService);
 
     @Test
     public void shouldAddedFilm() {
@@ -18,12 +25,13 @@ public class FilmControllerTest {
                 .description("Хороший фильм")
                 .releaseDate(LocalDate.of(2009, 9, 18))
                 .duration(8280L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertTrue(filmController.getSavedFilms().isEmpty());
-        Assertions.assertDoesNotThrow(() -> filmController.add(mrNobody));
-        Assertions.assertEquals(filmController.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmController.getSavedFilms().contains(mrNobody));
+        Assertions.assertTrue(filmStorage.getSavedFilms().isEmpty());
+        Assertions.assertDoesNotThrow(() -> filmController.addFilm(mrNobody));
+        Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(mrNobody));
     }
 
     @Test
@@ -33,16 +41,18 @@ public class FilmControllerTest {
                 .description("Фильм с пустым названием")
                 .releaseDate(LocalDate.now())
                 .duration(360L)
+                .likes(new HashSet<>())
                 .build();
         Film filmWithNullName = Film.builder()
                 .name(null)
                 .description("Фильм без названия")
                 .releaseDate(LocalDate.now())
                 .duration(720L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmWithEmptyName));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmWithNullName));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithEmptyName));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithNullName));
     }
 
     @Test
@@ -55,9 +65,10 @@ public class FilmControllerTest {
                         "Основано на реальных событиях.")
                 .releaseDate(LocalDate.now())
                 .duration(7600L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmWithLongDescription));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithLongDescription));
     }
 
     @Test
@@ -67,9 +78,10 @@ public class FilmControllerTest {
                 .description("Поезд не приехал")
                 .releaseDate(LocalDate.of(1895, 12, 27))
                 .duration(180L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmCreatedBeforeLumersBrothers));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmCreatedBeforeLumersBrothers));
     }
 
     @Test
@@ -79,16 +91,18 @@ public class FilmControllerTest {
                 .description("Фильм, просматривающийся в прошлое")
                 .releaseDate(LocalDate.now())
                 .duration(-7000L)
+                .likes(new HashSet<>())
                 .build();
         Film filmWithNullDuration = Film.builder()
                 .name("Самый короткий фильм")
                 .description("Фильм, состоящий из 11 кадров")
                 .releaseDate(LocalDate.now())
                 .duration(0L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmWithNegativeDuration));
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.add(filmWithNullDuration));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithNegativeDuration));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithNullDuration));
     }
 
 
@@ -99,9 +113,10 @@ public class FilmControllerTest {
                 .description("Фильм, который потом обновим")
                 .releaseDate(LocalDate.now())
                 .duration(1000L)
+                .likes(new HashSet<>())
                 .build();
 
-        Film addedFilm = filmController.add(addingFilm);
+        Film addedFilm = filmController.addFilm(addingFilm);
 
         Film updatingFilm = Film.builder()
                 .id(addedFilm.getId())
@@ -109,14 +124,15 @@ public class FilmControllerTest {
                 .description("Фильм, который обновили")
                 .releaseDate(LocalDate.of(1996, 10, 5))
                 .duration(10000L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertEquals(filmController.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmController.getSavedFilms().contains(addedFilm));
+        Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(addedFilm));
 
-        Assertions.assertDoesNotThrow(() -> filmController.update(updatingFilm));
-        Assertions.assertEquals(filmController.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmController.getSavedFilms().contains(updatingFilm));
+        Assertions.assertDoesNotThrow(() -> filmController.updateFilm(updatingFilm));
+        Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(updatingFilm));
     }
 
     @Test
@@ -126,9 +142,10 @@ public class FilmControllerTest {
                 .description("Фильм, без Id, который хочется обновить")
                 .releaseDate(LocalDate.now())
                 .duration(2000L)
+                .likes(new HashSet<>())
                 .build();
 
-        Assertions.assertThrowsExactly(ResponseStatusException.class, () -> filmController.update(filmWithoutId));
+        Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.updateFilm(filmWithoutId));
     }
 
 }
