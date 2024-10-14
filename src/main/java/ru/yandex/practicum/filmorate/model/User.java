@@ -16,5 +16,6 @@ public class User {
     private String name;
     private LocalDate birthday;
     private Set<Long> friends;
+    private boolean isFriendshipConfirm;
 
 }
