@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mappers.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
@@ -10,6 +12,7 @@ import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Optional;
 
 public class FilmControllerTest {
 
@@ -31,7 +34,7 @@ public class FilmControllerTest {
         Assertions.assertTrue(filmStorage.getSavedFilms().isEmpty());
         Assertions.assertDoesNotThrow(() -> filmController.addFilm(mrNobody));
         Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmStorage.getSavedFilms().contains(mrNobody));
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(Optional.of(mrNobody).map(FilmMapper::mapToFilmDto).get()));
     }
 
     @Test
@@ -116,7 +119,7 @@ public class FilmControllerTest {
                 .likes(new HashSet<>())
                 .build();
 
-        Film addedFilm = filmController.addFilm(addingFilm);
+        FilmDto addedFilm = filmController.addFilm(addingFilm);
 
         Film updatingFilm = Film.builder()
                 .id(addedFilm.getId())
@@ -132,7 +135,7 @@ public class FilmControllerTest {
 
         Assertions.assertDoesNotThrow(() -> filmController.updateFilm(updatingFilm));
         Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmStorage.getSavedFilms().contains(updatingFilm));
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(Optional.of(updatingFilm).map(FilmMapper::mapToFilmDto).get()));
     }
 
     @Test
@@ -147,5 +150,7 @@ public class FilmControllerTest {
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.updateFilm(filmWithoutId));
     }
+
+    //TODO: FilmGenreController and AgeRestrictionController methods test
 
 }

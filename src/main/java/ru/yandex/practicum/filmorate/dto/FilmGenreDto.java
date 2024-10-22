@@ -1,14 +1,10 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
 @Data
-@Builder
-public class FilmGenre {
-
+public class FilmGenreDto {
     private final Long id;
     private final String englishName;
     private final String russianName;
-
 }

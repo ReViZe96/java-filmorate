@@ -1,87 +1,81 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.FriendsManipulationException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mappers.UserMapper;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserStorage userStorage;
 
-
-    public Collection<User> getAllUsers() {
-        return userStorage.getAll();
+    @Autowired
+    //userInMemoryStorage
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+        this.userStorage = userStorage;
     }
 
-    public User getUserById(Long id) {
+
+    public List<UserDto> getAllUsers() {
+        return userStorage.getAll().stream().map(UserMapper::mapToUserDto).toList();
+    }
+
+    public UserDto getUserById(Long id) {
         Optional<User> user = userStorage.getUserById(id);
         if (user.isPresent()) {
-            return user.get();
+            log.info("Пользователь {} найден", user.get().getLogin());
+            return user.map(UserMapper::mapToUserDto).get();
         } else {
             throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
     }
 
-    public User createUser(User user) {
-        boolean isUserValid = isUserValid(user);
+    public UserDto createUser(User newUser) {
+        Optional<User> user = null;
+        boolean isUserValid = isUserValid(newUser);
         if (isUserValid) {
-            log.info("Добавляемый пользователь {} валиден", user.getLogin());
-            user.setId(userStorage.getNextId());
-            if (user.getName() == null || user.getName().isBlank()) {
-                user.setName(user.getLogin());
+            log.info("Добавляемый пользователь {} валиден", newUser.getLogin());
+            if (newUser.getName() == null || newUser.getName().isBlank()) {
+                newUser.setName(newUser.getLogin());
                 log.info("У добавляемого пользователя отстутствует имя. В качестве имени будет использован логин = {}",
-                        user.getLogin());
+                        newUser.getLogin());
             }
-            userStorage.addUser(user);
-            log.info("В системе зарегистрирован новый пользователь с логином: {}", user.getLogin());
+            user = userStorage.addUser(newUser);
+            log.info("В системе зарегистрирован новый пользователь с логином: {}", user.get().getLogin());
         }
-        return user;
+        return user.map(UserMapper::mapToUserDto).get();
     }
 
-    public User updateUser(User updatedUser) {
-        User oldUser;
+    public UserDto updateUser(User updatedUser) {
         if (updatedUser.getId() == null) {
             throw new ValidationException("Id должен быть указан");
         }
         if (userStorage.isUserExist(updatedUser.getId())) {
-            oldUser = userStorage.getUserById(updatedUser.getId()).get();
-            log.info("Обновляемый пользователь {} найден", updatedUser.getLogin());
-            oldUser.setEmail(updatedUser.getEmail());
-            oldUser.setLogin(updatedUser.getLogin());
-            oldUser.setName(updatedUser.getName());
-            oldUser.setBirthday(updatedUser.getBirthday());
-            if (updatedUser.getFriends() == null) {
-                oldUser.setFriends(new HashSet<>());
-            } else {
-                oldUser.setFriends(updatedUser.getFriends());
-            }
-            log.info("В системе обновлены данные о пользователе с логином: {}", updatedUser.getLogin());
-            return oldUser;
+            Optional<User> user = userStorage.updateUser(updatedUser);
+            return user.map(UserMapper::mapToUserDto).get();
         } else {
             throw new NotFoundException("Пользователь с id = " + updatedUser.getId() + " не найден");
         }
     }
 
-    public User addToFriends(Long id, Long friendId) {
+    public UserDto addToFriends(Long id, Long friendId) {
         isUsersCanBeAddedToFriend(id, friendId);
-        return userStorage.addFriend(id, friendId);
+        return userStorage.addFriend(id, friendId).map(UserMapper::mapToUserDto).get();
     }
 
     public void deleteFromFriends(Long id, Long friendId) {
@@ -97,20 +91,26 @@ public class UserService {
         log.info("Пользователи с id = {} и id = {} больше не являются друзьями", id, friendId);
     }
 
-    public Set<User> getUserFriends(Long id) {
+    public Set<UserDto> getUserFriends(Long id) {
         canGetUserFriends(id);
         Set<Long> friendsIds = userStorage.getUserFriendsIds(id);
         log.info("Список друзей пользователя с id = {}: {}", id, friendsIds);
-        return friendsIds.stream().map(f -> userStorage.getUserById(f).get()).collect(Collectors.toSet());
+        return friendsIds.stream()
+                .map(f -> userStorage.getUserById(f).get())
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toSet());
     }
 
-    public Set<User> getCommonFriends(Long id, Long otherId) {
+    public Set<UserDto> getCommonFriends(Long id, Long otherId) {
         canGetCommonFriends(id, otherId);
         Set<Long> firstUserFirendIds = userStorage.getUserFriendsIds(id);
         Set<Long> secondUserFriendIds = userStorage.getUserFriendsIds(otherId);
         firstUserFirendIds.retainAll(secondUserFriendIds);
         log.info("Найдены общие друзья для пользователей с id = {} и id = {}", id, otherId);
-        return firstUserFirendIds.stream().map(f -> userStorage.getUserById(f).get()).collect(Collectors.toSet());
+        return firstUserFirendIds.stream()
+                .map(f -> userStorage.getUserById(f).get())
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toSet());
     }
 
 

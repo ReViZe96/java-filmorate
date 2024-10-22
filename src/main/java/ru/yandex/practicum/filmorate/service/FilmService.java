@@ -1,12 +1,19 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.AgeRestrictionDto;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
+import ru.yandex.practicum.filmorate.dto.FilmGenreDto;
 import ru.yandex.practicum.filmorate.exception.LikesManipulationException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mappers.AgeRestrictionMapper;
+import ru.yandex.practicum.filmorate.mappers.FilmGenreMapper;
+import ru.yandex.practicum.filmorate.mappers.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
@@ -15,7 +22,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class FilmService {
 
     private final Logger log = LoggerFactory.getLogger(FilmService.class);
@@ -25,58 +31,56 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
-
-    public Collection<Film> getAllFilms() {
-        return filmStorage.getAll();
+    @Autowired
+    //filmInMemoryStorage
+    //userInMemoryStorage
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("userDbStorage") UserStorage userStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
     }
 
-    public Film getFilmById(Long id) {
+
+    public List<FilmDto> getAllFilms() {
+        return filmStorage.getAll().stream().map(FilmMapper::mapToFilmDto).toList();
+    }
+
+    public FilmDto getFilmById(Long id) {
         Optional<Film> film = filmStorage.getFilmById(id);
         if (film.isPresent()) {
             log.info("Фильм {} найден", film.get().getName());
-            return film.get();
+            return film.map(FilmMapper::mapToFilmDto).get();
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
     }
 
-    public Film addFilm(Film film) {
-        boolean isFilmValid = isFilmValid(film);
+    public FilmDto addFilm(Film newFilm) {
+        Optional<Film> film = null;
+        boolean isFilmValid = isFilmValid(newFilm);
         if (isFilmValid) {
-            log.info("Добавляемый фильм {} валиден", film.getName());
-            film.setId(filmStorage.getNextId());
-            filmStorage.addFilm(film);
-            log.info("В систему добавлен новый фильм под названием: {}", film.getName());
+            log.info("Добавляемый фильм {} валиден", newFilm.getName());
+            film = filmStorage.addFilm(newFilm);
+            log.info("В систему добавлен новый фильм под названием: {}", film.get().getName());
         }
-        return film;
+        return film.map(FilmMapper::mapToFilmDto).get();
     }
 
-    public Film updateFilm(Film updatedFilm) {
+    public FilmDto updateFilm(Film updatedFilm) {
         if (updatedFilm.getId() == null) {
             throw new ValidationException("Id должен быть указан");
         }
         if (filmStorage.isFilmExist(updatedFilm.getId())) {
-            Film oldFilm = filmStorage.getFilmById(updatedFilm.getId()).get();
-            log.info("Обновляемый фильм {} найден", oldFilm.getName());
-            oldFilm.setName(updatedFilm.getName());
-            oldFilm.setDescription(updatedFilm.getDescription());
-            oldFilm.setReleaseDate(updatedFilm.getReleaseDate());
-            oldFilm.setDuration(updatedFilm.getDuration());
-            if (updatedFilm.getLikes() == null) {
-                oldFilm.setLikes(new HashSet<>());
-            } else {
-                oldFilm.setLikes(updatedFilm.getLikes());
-            }
-            log.info("В системе обновлены данные о фильме под названием: {}", updatedFilm.getName());
-            return oldFilm;
+            Optional<Film> film = filmStorage.updateFilm(updatedFilm);
+            return film.map(FilmMapper::mapToFilmDto).get();
         } else {
             throw new NotFoundException("Фильм с id = " + updatedFilm.getId() + " не найден");
         }
     }
 
-    public Film addLikeToFilm(Long filmId, Long userId) {
+    public FilmDto addLikeToFilm(Long filmId, Long userId) {
         isLikeCanBeAdded(filmId, userId);
-        return filmStorage.addLike(filmId, userId);
+        return filmStorage.addLike(filmId, userId).map(FilmMapper::mapToFilmDto).get();
     }
 
     public void deleteLikeFromFilm(Long filmId, Long userId) {
@@ -84,11 +88,27 @@ public class FilmService {
         filmStorage.removeLike(filmId, userId);
     }
 
-    public List<Film> getMostPopularFilms(int count) {
+    public List<FilmDto> getMostPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Размер выборки должен быть больше нуля");
         }
-        return filmStorage.getAll().stream().sorted(Film::compareTo).limit(count).toList();
+        return filmStorage.getAll().stream().sorted(Film::compareTo).limit(count).map(FilmMapper::mapToFilmDto).toList();
+    }
+
+    public List<FilmGenreDto> getAllGenres() {
+        return filmStorage.getAllGenres().stream().map(FilmGenreMapper::mapToFilmGenreDto).toList();
+    }
+
+    public FilmGenreDto getGenreById(Long genreId) {
+        return filmStorage.getGenreById(genreId).map(FilmGenreMapper::mapToFilmGenreDto).get();
+    }
+
+    public List<AgeRestrictionDto> getAllAgeRestrictions() {
+        return filmStorage.getAllAgeRestrictions().stream().map(AgeRestrictionMapper::mapToAgeRestrictionDto).toList();
+    }
+
+    public AgeRestrictionDto getAgeRestrictionById(Long ageRestrictionId) {
+        return filmStorage.getAgeRestrictionById(ageRestrictionId).map(AgeRestrictionMapper::mapToAgeRestrictionDto).get();
     }
 
 

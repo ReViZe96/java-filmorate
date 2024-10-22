@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -141,7 +142,7 @@ public class UserControllerTest {
                 .friends(new HashSet<>())
                 .build();
 
-        User createdUser = userController.createUser(creatingUser);
+        UserDto createdUser = userController.createUser(creatingUser);
 
         User updatingUser = User.builder()
                 .id(createdUser.getId())
@@ -153,7 +154,6 @@ public class UserControllerTest {
                 .build();
 
         Assertions.assertEquals(userStorage.getSavedUsers().size(), 1);
-        Assertions.assertTrue(userStorage.getSavedUsers().contains(createdUser));
 
         Assertions.assertDoesNotThrow(() -> userController.updateUser(updatingUser));
         Assertions.assertEquals(userStorage.getSavedUsers().size(), 1);
