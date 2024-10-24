@@ -65,11 +65,11 @@ public class UserService {
         if (updatedUser.getId() == null) {
             throw new ValidationException("Id должен быть указан");
         }
-        if (userStorage.isUserExist(updatedUser.getId())) {
+        if (!userStorage.isUserExist(updatedUser.getId())) {
+            throw new NotFoundException("Пользователь с id = " + updatedUser.getId() + " не найден");
+        } else {
             Optional<User> user = userStorage.updateUser(updatedUser);
             return user.map(UserMapper::mapToUserDto).get();
-        } else {
-            throw new NotFoundException("Пользователь с id = " + updatedUser.getId() + " не найден");
         }
     }
 

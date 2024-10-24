@@ -11,12 +11,13 @@ public class FilmMapper {
     public static FilmDto mapToFilmDto(Film film) {
         FilmDto filmDto = new FilmDto();
         filmDto.setId(film.getId());
+        filmDto.setName(film.getName());
         filmDto.setDescription(film.getDescription());
         filmDto.setReleaseDate(film.getReleaseDate());
         filmDto.setDuration(film.getDuration());
         filmDto.setLikes(film.getLikes());
-        filmDto.setGenreIds(film.getGenreIds());
-        filmDto.setAgeRestrictionId(film.getAgeRestrictionId());
+        filmDto.setGenres(film.getGenres());
+        filmDto.setMpa(film.getMpa());
         return filmDto;
     }
 

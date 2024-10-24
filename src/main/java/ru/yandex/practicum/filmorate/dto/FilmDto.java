@@ -1,9 +1,12 @@
 package ru.yandex.practicum.filmorate.dto;
 
 import lombok.Data;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class FilmDto {
@@ -12,7 +15,7 @@ public class FilmDto {
     private String description;
     private LocalDate releaseDate;
     private Long duration;
-    private Set<Long> likes;
-    private Set<Long> genreIds;
-    private Long ageRestrictionId;
+    private List<User> likes;
+    private List<FilmGenre> genres;
+    private Mpa mpa;
 }

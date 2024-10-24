@@ -12,7 +12,7 @@ public class UserMapper {
         UserDto userDto = new UserDto();
         userDto.setId(user.getId());
         userDto.setEmail(user.getEmail());
-        userDto.setLogin(userDto.getLogin());
+        userDto.setLogin(user.getLogin());
         userDto.setName(user.getName());
         userDto.setBirthday(user.getBirthday());
         userDto.setFriends(user.getFriends());

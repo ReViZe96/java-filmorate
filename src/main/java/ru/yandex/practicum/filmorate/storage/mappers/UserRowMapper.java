@@ -16,6 +16,7 @@ public class UserRowMapper implements RowMapper<User> {
         LocalDate birthday = LocalDate.ofInstant(resultSet.getTimestamp("birthday").toInstant(),
                 ZoneId.systemDefault());
         User user = User.builder()
+                .id(resultSet.getLong("id"))
                 .email(resultSet.getString("email"))
                 .login(resultSet.getString("login"))
                 .name(resultSet.getString("name"))

@@ -1,12 +1,13 @@
 package ru.yandex.practicum.filmorate.storage.interfaces;
 
-import ru.yandex.practicum.filmorate.model.AgeRestriction;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface FilmStorage {
 
@@ -20,17 +21,17 @@ public interface FilmStorage {
 
     boolean isFilmExist(Long filmId);
 
-    Set<Long> getFilmLikeIds(Long id);
+    List<User> getFilmLikeIds(Long id);
 
-    Optional<Film> addLike(Long filmId, Long userId);
+    Optional<Film> addLike(Long filmId, User user);
 
-    void removeLike(Long filmId, Long userId);
+    void removeLike(Long filmId, User user);
 
     Collection<FilmGenre> getAllGenres();
 
     Optional<FilmGenre> getGenreById(Long genreId);
 
-    Collection<AgeRestriction> getAllAgeRestrictions();
+    Collection<Mpa> getAllMpas();
 
-    Optional<AgeRestriction> getAgeRestrictionById(Long ageRestrictionId);
+    Optional<Mpa> getMpaById(Long mpaId);
 }

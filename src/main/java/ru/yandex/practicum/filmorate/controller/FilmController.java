@@ -9,7 +9,7 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import java.util.List;
 
 @RestController
-@RequestMapping("films")
+@RequestMapping("/films")
 @RequiredArgsConstructor
 public class FilmController {
 

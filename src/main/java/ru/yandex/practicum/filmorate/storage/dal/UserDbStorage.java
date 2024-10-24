@@ -11,12 +11,11 @@ import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Repository("userDbStorage")
 public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
@@ -24,15 +23,15 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
     private final Logger log = LoggerFactory.getLogger(UserDbStorage.class);
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM Users";
-    private static final String FIND_BY_ID_QUERY = "SELECT * FROM Films Users id = ?";
+    private static final String FIND_BY_ID_QUERY = "SELECT * FROM Users where id = ?";
     private static final String INSERT_USER_QUERY = "INSERT INTO Users(email, login, name, birthday)" +
-            "VALUES (?, ?, ?, ?) returning id";
-    private static String UPDATE_USER_QUERY = "UPDATE Users(email = ?, login = ?, name = ?, birthday = ?) " +
+            "VALUES (?, ?, ?, ?)";
+    private static String UPDATE_USER_QUERY = "UPDATE Users SET email = ?, login = ?, name = ?, birthday = ? " +
             "where id = ?";
 
     private static final String FIND_FRIENDS_BY_ID = "SELECT id FROM Users where id IN (" +
             "SELECT subscribing_friend_id FROM Friend_relationship " +
-            "WHERE accepting_friend_id = ?)";
+            "WHERE accepting_friend_id = 1)";
     private static final String FIND_EXIST_FRIENDSHIP_RELATIONS_QUERY = "SELECT subscribing_friend_id FROM Friend_relationship " +
             "WHERE accepting_friend_id = 1 and subscribing_friend_id = 2";
     private static final String INSERT_FRIEND_RELATIONSHIP_QUERY = "INSERT INTO Friend_relationship (accepting_friend_id, " +
@@ -62,15 +61,17 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
 
     @Override
     public Optional<User> addUser(User newUser) {
-        isFriendsSetValid(newUser);
         Long userId = insert(INSERT_USER_QUERY,
                 newUser.getEmail(),
                 newUser.getLogin(),
                 newUser.getName(),
-                Timestamp.from(Instant.from(newUser.getBirthday()))
+                Timestamp.from(newUser.getBirthday().atStartOfDay(ZoneId.systemDefault()).toInstant())
         );
-        for (Long userFriendId : newUser.getFriends()) {
-            insert(INSERT_FRIEND_RELATIONSHIP_QUERY, newUser.getId(), userFriendId);
+        if (newUser.getFriends() != null) {
+            isFriendsSetValid(newUser);
+            for (Long userFriendId : newUser.getFriends()) {
+                insert(INSERT_FRIEND_RELATIONSHIP_QUERY, newUser.getId(), userFriendId);
+            }
         }
         return findOne(FIND_BY_ID_QUERY, userId);
     }
@@ -80,16 +81,18 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
         Optional<User> user = findOne(FIND_BY_ID_QUERY, updatedUser.getId());
         if (user.isPresent()) {
             log.info("Обновляемый пользователь {} найден", updatedUser.getLogin());
-            isFriendsSetValid(updatedUser);
             update(UPDATE_USER_QUERY,
                     updatedUser.getEmail(),
                     updatedUser.getLogin(),
                     updatedUser.getName(),
-                    Timestamp.from(Instant.from(updatedUser.getBirthday())),
+                    Timestamp.from(updatedUser.getBirthday().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                     user.get().getId());
-            for (Long userFriendId : user.get().getFriends()) {
-                if (findExistFriendship(user.get().getId(), userFriendId).isEmpty()) {
-                    insert(INSERT_FRIEND_RELATIONSHIP_QUERY, user.get().getId(), userFriendId);
+            if (updatedUser.getFriends() != null) {
+                isFriendsSetValid(updatedUser);
+                for (Long userFriendId : user.get().getFriends()) {
+                    if (findExistFriendship(user.get().getId(), userFriendId).isEmpty()) {
+                        insert(INSERT_FRIEND_RELATIONSHIP_QUERY, user.get().getId(), userFriendId);
+                    }
                 }
             }
             log.info("В системе обновлены данные о пользователе с логином: {}", updatedUser.getLogin());
@@ -104,8 +107,14 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
 
     @Override
     public Set<Long> getUserFriendsIds(Long id) {
-        List<User> subscribingFriends = findMany(FIND_FRIENDS_BY_ID, id);
-        return subscribingFriends.stream().map(User::getId).collect(Collectors.toSet());
+        String parametrizedQuery = FIND_FRIENDS_BY_ID.replace("1", id.toString());
+        return jdbc.query(parametrizedQuery, (ResultSet rs) -> {
+            Set<Long> friendsIds = new HashSet<>();
+            while (rs.next()) {
+                friendsIds.add(rs.getLong("id"));
+            }
+            return friendsIds;
+        });
     }
 
     @Override

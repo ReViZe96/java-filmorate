@@ -13,7 +13,6 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
 
     private static final String FIND_ALL_GENRES_QUERY = "SELECT * FROM Genres";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM Genres WHERE id = ?";
-    private static final String FIND_BY_FILM_ID_QUERY = "SELECT * FROM Genres WHERE film_id = ?";
 
     public FilmGenreDbStorage(JdbcTemplate jdbc, RowMapper<FilmGenre> mapper) {
         super(jdbc, mapper);
@@ -25,10 +24,6 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
 
     public Optional<FilmGenre> getById(Long genreId) {
         return findOne(FIND_BY_ID_QUERY, genreId);
-    }
-
-    public List<FilmGenre> getByFilmId(Long filmId) {
-        return findMany(FIND_BY_FILM_ID_QUERY, filmId);
     }
 
 }

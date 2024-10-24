@@ -45,7 +45,7 @@ services:
                       accepting_friend_id  bigint REFERENCES Users(id),
                       subscribing_friend_id bigint REFERENCES Users(id)
           );
-          CREATE TABLE IF NOT EXISTS Age_restrictions (
+          CREATE TABLE IF NOT EXISTS Motion_Picture_Associations (
                       id serial PRIMARY KEY,
                       name varchar(20),
                       description varchar(200)
@@ -61,7 +61,7 @@ services:
                       description varchar(200),
                       release_date date,
                       duration bigint,
-                      age_restriction_id bigint REFERENCES Age_restrictions(id),
+                      mpa_id bigint REFERENCES Motion_Picture_Associations(id),
                       CONSTRAINT description_max_length CHECK (char_length(description) <= 200),
                       CONSTRAINT duration CHECK (duration > 0)
           );
@@ -74,11 +74,11 @@ services:
                       user_id bigint REFERENCES Users(id)
           );
         
-          insert into age_restrictions(name, description) values ('G', 'Нет возрастных ограничений');
-          insert into age_restrictions(name, description) values ('PG', 'Детям рекомендуется смотреть фильм с родителями');
-          insert into age_restrictions(name, description) values ('PG_13', 'Детям до 13 лет просмотр не желателен');
-          insert into age_restrictions(name, description) values ('R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого');
-          insert into age_restrictions(name, description) values ('NC_17', 'Лицам до 18 лет просмотр запрещён');
+          insert into Motion_Picture_Associations(name, description) values ('G', 'Нет возрастных ограничений');
+          insert into Motion_Picture_Associations(name, description) values ('PG', 'Детям рекомендуется смотреть фильм с родителями');
+          insert into Motion_Picture_Associations(name, description) values ('PG_13', 'Детям до 13 лет просмотр не желателен');
+          insert into Motion_Picture_Associations(name, description) values ('R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого');
+          insert into Motion_Picture_Associations(name, description) values ('NC_17', 'Лицам до 18 лет просмотр запрещён');
   
           insert into genres (english_name, russian_name) values ('COMEDY', 'Комедия');
           insert into genres (english_name, russian_name) values ('DRAMA', 'Драмма');

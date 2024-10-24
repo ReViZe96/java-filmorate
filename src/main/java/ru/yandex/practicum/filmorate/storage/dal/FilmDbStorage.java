@@ -6,8 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.IncorrectGenreOrMpa;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.AgeRestriction;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmGenre;
 import ru.yandex.practicum.filmorate.model.User;
@@ -15,9 +16,8 @@ import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
 
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository("filmDbStorage")
 public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
@@ -27,30 +27,31 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private static final String FIND_ALL_QUERY = "SELECT * FROM Films";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM Films WHERE id = ?";
     private static final String INSERT_FILM_QUERY = "INSERT INTO Films(name, description, release_date, duration, " +
-            "age_restriction_id) VALUES (?, ?, ?, ?, ?, ?) returning id";
-    private static final String UPDATE_FILM_QUERY = "UPDATE Films SET (name = ?, description = ?, release_date = ?, " +
-            "duration = ?, age_restriction_id = ?) WHERE id = ?";
+            "mpa_id) VALUES (?, ?, ?, ?, ?)";
+    private static final String UPDATE_FILM_QUERY = "UPDATE Films SET name = ?, description = ?, release_date = ?, " +
+            "duration = ?, mpa_id = ? WHERE id = ?";
 
     private static final String FIND_EXIST_FILM_GENRES_RELATIONS_QUERY = "SELECT genre_id FROM Films_genres " +
             "WHERE film_id = 1 and genre_id = 2";
+    private static final String FIND_GENRES_IDS_BY_FILM_ID_QUERY = "SELECT * FROM Films_genres where film_id = ";
     private static final String INSERT_FILMS_GENRES_QUERY = "INSERT INTO Films_genres(film_id, genre_id) VALUES (?, ?)";
 
     private static final String FIND_LIKES_BY_FILM_ID_QUERY = "SELECT * FROM User_likes WHERE film_id = ";
     private static final String FIND_EXIST_FILM_LIKES_RELATIONS_QUERY = "SELECT user_id FROM User_likes WHERE " +
             "film_id = 1 and user_id = 2";
-    private static final String INSERT_LIKE_QUERY = "INSERT INTO User_likes(film_id, user_id) VALUES (?, ?) returning id";
+    private static final String INSERT_LIKE_QUERY = "INSERT INTO User_likes(film_id, user_id) VALUES (?, ?)";
     private static final String DELETE_LIKE_QUERY = "DELETE * FROM User_likes where film_id = ? and user_id = ?";
 
     private UserDbStorage userDbStorage;
     private FilmGenreDbStorage filmGenreDbStorage;
-    private AgeRestrictionDbStorage ageRestrictionDbStorage;
+    private MpaDbStorage mpaDbStorage;
 
     public FilmDbStorage(JdbcTemplate jdbc, RowMapper<Film> mapper, UserDbStorage userDbStorage,
-                         FilmGenreDbStorage filmGenreDbStorage, AgeRestrictionDbStorage ageRestrictionDbStorage) {
+                         FilmGenreDbStorage filmGenreDbStorage, MpaDbStorage mpaDbStorage) {
         super(jdbc, mapper);
         this.userDbStorage = userDbStorage;
         this.filmGenreDbStorage = filmGenreDbStorage;
-        this.ageRestrictionDbStorage = ageRestrictionDbStorage;
+        this.mpaDbStorage = mpaDbStorage;
     }
 
     @Override
@@ -58,7 +59,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         List<Film> allFilms = findMany(FIND_ALL_QUERY);
         for (Film film : allFilms) {
             film.setLikes(getFilmLikeIds(film.getId()));
-            film.setGenreIds(getFilmGenresIds(film.getId()));
+            film.setGenres(getFilmGenres(film.getId()));
         }
         return allFilms;
     }
@@ -67,27 +68,34 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     public Optional<Film> getFilmById(Long id) {
         Film film = findOne(FIND_BY_ID_QUERY, id).get();
         film.setLikes(getFilmLikeIds(id));
-        film.setGenreIds(getFilmGenresIds(id));
+        film.setGenres(getFilmGenres(id));
         return Optional.of(film);
     }
 
     @Override
     public Optional<Film> addFilm(Film newFilm) {
-        Optional<AgeRestriction> ageRestriction = isFieldsFromAnotherTablesValid(newFilm);
+        Optional<Mpa> mpa = isFieldsFromAnotherTablesValid(newFilm);
+
         Long filmId = insert(INSERT_FILM_QUERY,
                 newFilm.getName(),
                 newFilm.getDescription(),
-                Timestamp.from(Instant.from(newFilm.getReleaseDate())),
+                Timestamp.from(newFilm.getReleaseDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                 newFilm.getDuration(),
-                ageRestriction
+                mpa.map(Mpa::getId).orElse(null)
         );
-        for (Long userLikeId : newFilm.getLikes()) {
-            insert(INSERT_LIKE_QUERY, newFilm.getId(), userLikeId);
+        if (newFilm.getLikes() != null && !newFilm.getLikes().isEmpty()) {
+            for (User userLiked : newFilm.getLikes()) {
+                insert(INSERT_LIKE_QUERY, newFilm.getId(), userLiked.getId());
+            }
         }
-        for (Long genreId : newFilm.getGenreIds()) {
-            insert(INSERT_FILMS_GENRES_QUERY, newFilm.getId(), genreId);
+        if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
+            for (FilmGenre genre : newFilm.getGenres()) {
+                insert(INSERT_FILMS_GENRES_QUERY, newFilm.getId(), genre.getId());
+            }
         }
-        return findOne(FIND_BY_ID_QUERY, filmId);
+        newFilm.setId(filmId);
+        newFilm.setMpa(mpa.get());
+        return Optional.of(newFilm);
     }
 
     @Override
@@ -95,23 +103,27 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         Optional<Film> film = findOne(FIND_BY_ID_QUERY, updatedFilm.getId());
         if (film.isPresent()) {
             log.info("Обновляемый фильм {} найден", film.get().getName());
-            Optional<AgeRestriction> ageRestriction = isFieldsFromAnotherTablesValid(updatedFilm);
+            Optional<Mpa> mpa = isFieldsFromAnotherTablesValid(updatedFilm);
             update(UPDATE_FILM_QUERY,
                     updatedFilm.getName(),
                     updatedFilm.getDescription(),
-                    Timestamp.from(Instant.from(updatedFilm.getReleaseDate())),
+                    Timestamp.from(updatedFilm.getReleaseDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                     updatedFilm.getDuration(),
-                    ageRestriction,
+                    mpa.map(Mpa::getId).orElse(null),
                     film.get().getId()
             );
-            for (Long userLikeId : film.get().getLikes()) {
-                if (findExistFilmLikes(film.get().getId(), userLikeId).isEmpty()) {
-                    insert(INSERT_LIKE_QUERY, film.get().getId(), userLikeId);
+            if (film.get().getLikes() != null && !film.get().getLikes().isEmpty()) {
+                for (User userLiked : film.get().getLikes()) {
+                    if (findExistFilmLikes(film.get().getId(), userLiked.getId()).isEmpty()) {
+                        insert(INSERT_LIKE_QUERY, film.get().getId(), userLiked.getId());
+                    }
                 }
             }
-            for (Long genreId : film.get().getGenreIds()) {
-                if (findExistFilmGenres(film.get().getId(), genreId).isEmpty()) {
-                    insert(INSERT_FILMS_GENRES_QUERY, film.get().getId(), genreId);
+            if (film.get().getGenres() != null && !film.get().getGenres().isEmpty()) {
+                for (FilmGenre genre : film.get().getGenres()) {
+                    if (findExistFilmGenres(film.get().getId(), genre.getId()).isEmpty()) {
+                        insert(INSERT_FILMS_GENRES_QUERY, film.get().getId(), genre.getId());
+                    }
                 }
             }
             log.info("В системе обновлены данные о фильме под названием: {}", updatedFilm.getName());
@@ -125,30 +137,35 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     }
 
     @Override
-    public Set<Long> getFilmLikeIds(Long id) {
+    public List<User> getFilmLikeIds(Long id) {
+        List<User> userLiked = new ArrayList<>();
         String query = FIND_LIKES_BY_FILM_ID_QUERY + id;
-        return jdbc.query(query, (ResultSet rs) -> {
-            Set<Long> userIds = new HashSet<>();
+        Set<Long> userIds = new HashSet<>();
+        jdbc.query(query, (ResultSet rs) -> {
             while (rs.next()) {
                 userIds.add(rs.getLong("user_id"));
             }
             return userIds;
         });
+        for (Long userId : userIds) {
+            userLiked.add(userDbStorage.getUserById(userId).get());
+        }
+        return userLiked;
     }
 
     @Override
-    public Optional<Film> addLike(Long filmId, Long userId) {
-        insert(INSERT_LIKE_QUERY, filmId, userId);
+    public Optional<Film> addLike(Long filmId, User user) {
+        insert(INSERT_LIKE_QUERY, filmId, user.getId());
         Optional<Film> film = getFilmById(filmId);
-        log.info("Лайк пользователя с id = {} добавлен фильму {}", userId, film.get().getName());
+        log.info("Лайк пользователя {} добавлен фильму {}", user.getLogin(), film.get().getName());
         return film;
     }
 
     @Override
-    public void removeLike(Long filmId, Long userId) {
-        int rowsDeleted = jdbc.update(DELETE_LIKE_QUERY, filmId, userId);
+    public void removeLike(Long filmId, User user) {
+        int rowsDeleted = jdbc.update(DELETE_LIKE_QUERY, filmId, user.getId());
         if (rowsDeleted > 0) {
-            log.info("Лайк пользователя с id = {} удален у фильма c id = {}", userId, filmId);
+            log.info("Лайк пользователя с id = {} удален у фильма c id = {}", user.getId(), filmId);
         }
     }
 
@@ -163,40 +180,61 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     }
 
     @Override
-    public List<AgeRestriction> getAllAgeRestrictions() {
-        return ageRestrictionDbStorage.getAll();
+    public List<Mpa> getAllMpas() {
+        return mpaDbStorage.getAll();
     }
 
     @Override
-    public Optional<AgeRestriction> getAgeRestrictionById(Long ageRestrictionId) {
-        return ageRestrictionDbStorage.findById(ageRestrictionId);
+    public Optional<Mpa> getMpaById(Long mpaId) {
+        return mpaDbStorage.findById(mpaId);
     }
 
-    private Set<Long> getFilmGenresIds(Long filmId) {
-        return filmGenreDbStorage.getByFilmId(filmId).stream().map(FilmGenre::getId).collect(Collectors.toSet());
-    }
+    private List<FilmGenre> getFilmGenres(Long filmId) {
+        List<FilmGenre> filmGenres = new ArrayList<>();
+        String query = FIND_GENRES_IDS_BY_FILM_ID_QUERY + filmId;
+        Set<Long> genreIds = new HashSet<>();
+        jdbc.query(query, (ResultSet rs) -> {
+            while (rs.next()) {
+                genreIds.add(rs.getLong("film_id"));
+            }
+            return genreIds;
+        });
 
-    private Optional<AgeRestriction> isFieldsFromAnotherTablesValid(Film film) {
-        Optional<AgeRestriction> ageRestriction = ageRestrictionDbStorage.findById(film.getAgeRestrictionId());
-        if (!ageRestriction.isPresent()) {
-            throw new NotFoundException("Возрастное ограничение не найдено");
+        for (Long genreId : genreIds) {
+            filmGenres.add(filmGenreDbStorage.getById(genreId).get());
         }
+        return filmGenres;
+    }
 
-        for (Long genreId : film.getGenreIds()) {
-            Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genreId);
-            if (!filmGenre.isPresent()) {
-                throw new NotFoundException("Жанр фильма не найден");
+    private Optional<Mpa> isFieldsFromAnotherTablesValid(Film film) {
+        Optional<Mpa> mpa = Optional.empty();
+
+        if (film.getMpa() != null) {
+            mpa = mpaDbStorage.findById(film.getMpa().getId());
+            if (mpa.isEmpty()) {
+                throw new IncorrectGenreOrMpa("Возрастное ограничение не найдено");
             }
         }
 
-        for (Long userLikeId : film.getLikes()) {
-            Optional<User> user = userDbStorage.getUserById(userLikeId);
-            if (!user.isPresent()) {
-                throw new NotFoundException("Пользователь с id = " + userLikeId + " не мог поставить лайк фильму, т.к." +
-                        " данного пользователя не существует");
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            for (FilmGenre genre : film.getGenres()) {
+                Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genre.getId());
+                if (filmGenre.isEmpty()) {
+                    throw new IncorrectGenreOrMpa("Жанр фильма не найден");
+                }
             }
         }
-        return ageRestriction;
+
+        if (film.getLikes() != null && !film.getLikes().isEmpty()) {
+            for (User userLiked : film.getLikes()) {
+                Optional<User> user = userDbStorage.getUserById(userLiked.getId());
+                if (user.isEmpty()) {
+                    throw new NotFoundException("Пользователь " + userLiked.getLogin() + " не мог поставить лайк фильму, т.к." +
+                            " данного пользователя не существует");
+                }
+            }
+        }
+        return mpa;
     }
 
     private Set<Long> findExistFilmLikes(Long filmId, Long userId) {

@@ -5,10 +5,10 @@ import lombok.Data;
 
 @Data
 @Builder
-public class AgeRestriction {
+public class Mpa {
 
     private final Long id;
     private final String name;
-    private final String description;
+//    private final String description;
 
 }

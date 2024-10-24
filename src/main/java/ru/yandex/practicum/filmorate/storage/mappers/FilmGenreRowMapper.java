@@ -13,8 +13,9 @@ public class FilmGenreRowMapper implements RowMapper<FilmGenre> {
     public FilmGenre mapRow(ResultSet resultSet, int rowNum) throws SQLException {
         return FilmGenre.builder()
                 .id(resultSet.getLong("id"))
-                .englishName(resultSet.getString("english_name"))
-                .russianName(resultSet.getString("russian_name"))
+                .name(resultSet.getString("name"))
+//                .englishName(resultSet.getString("english_name"))
+//                .russianName(resultSet.getString("russian_name"))
                 .build();
     }
 }

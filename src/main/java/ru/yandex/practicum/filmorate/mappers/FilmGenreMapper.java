@@ -9,7 +9,8 @@ import ru.yandex.practicum.filmorate.model.FilmGenre;
 public class FilmGenreMapper {
 
     public static FilmGenreDto mapToFilmGenreDto(FilmGenre filmGenre) {
-        return new FilmGenreDto(filmGenre.getId(), filmGenre.getEnglishName(), filmGenre.getRussianName());
+//        return new FilmGenreDto(filmGenre.getId(), filmGenre.getEnglishName(), filmGenre.getRussianName());
+        return new FilmGenreDto(filmGenre.getId(), filmGenre.getName());
     }
 
 }

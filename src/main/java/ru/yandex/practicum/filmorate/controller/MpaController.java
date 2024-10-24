@@ -5,26 +5,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.yandex.practicum.filmorate.dto.AgeRestrictionDto;
+import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("mpa")
+@RequestMapping("/mpa")
 @RequiredArgsConstructor
-public class AgeRestrictionController {
+public class MpaController {
 
     private final FilmService filmService;
 
     @GetMapping
-    public List<AgeRestrictionDto> getAllAgeRestrictions() {
-        return filmService.getAllAgeRestrictions();
+    public List<MpaDto> getAllMpas() {
+        return filmService.getAllMpas();
     }
 
     @GetMapping("/{id}")
-    public AgeRestrictionDto getAgeRestrictionById(@PathVariable Long id) {
-        return filmService.getAgeRestrictionById(id);
+    public MpaDto getMpaById(@PathVariable Long id) {
+        return filmService.getMpaById(id);
     }
 
 }

@@ -5,16 +5,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dto.AgeRestrictionDto;
+import ru.yandex.practicum.filmorate.dto.MpaDto;
 import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.FilmGenreDto;
 import ru.yandex.practicum.filmorate.exception.LikesManipulationException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.mappers.AgeRestrictionMapper;
+import ru.yandex.practicum.filmorate.mappers.MpaMapper;
 import ru.yandex.practicum.filmorate.mappers.FilmGenreMapper;
 import ru.yandex.practicum.filmorate.mappers.FilmMapper;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 
@@ -70,22 +73,22 @@ public class FilmService {
         if (updatedFilm.getId() == null) {
             throw new ValidationException("Id должен быть указан");
         }
-        if (filmStorage.isFilmExist(updatedFilm.getId())) {
+        if (!filmStorage.isFilmExist(updatedFilm.getId())) {
+            throw new NotFoundException("Фильм с id = " + updatedFilm.getId() + " не найден");
+        } else {
             Optional<Film> film = filmStorage.updateFilm(updatedFilm);
             return film.map(FilmMapper::mapToFilmDto).get();
-        } else {
-            throw new NotFoundException("Фильм с id = " + updatedFilm.getId() + " не найден");
         }
     }
 
     public FilmDto addLikeToFilm(Long filmId, Long userId) {
         isLikeCanBeAdded(filmId, userId);
-        return filmStorage.addLike(filmId, userId).map(FilmMapper::mapToFilmDto).get();
+        return filmStorage.addLike(filmId, userStorage.getUserById(userId).get()).map(FilmMapper::mapToFilmDto).get();
     }
 
     public void deleteLikeFromFilm(Long filmId, Long userId) {
         isLikeCanBeDeleted(filmId, userId);
-        filmStorage.removeLike(filmId, userId);
+        filmStorage.removeLike(filmId, userStorage.getUserById(userId).get());
     }
 
     public List<FilmDto> getMostPopularFilms(int count) {
@@ -100,15 +103,25 @@ public class FilmService {
     }
 
     public FilmGenreDto getGenreById(Long genreId) {
-        return filmStorage.getGenreById(genreId).map(FilmGenreMapper::mapToFilmGenreDto).get();
+        Optional<FilmGenre> genre = filmStorage.getGenreById(genreId);
+        if (genre.isEmpty()) {
+            throw new NotFoundException("Жанр с id = " + genreId + " не найден");
+        } else {
+            return genre.map(FilmGenreMapper::mapToFilmGenreDto).get();
+        }
     }
 
-    public List<AgeRestrictionDto> getAllAgeRestrictions() {
-        return filmStorage.getAllAgeRestrictions().stream().map(AgeRestrictionMapper::mapToAgeRestrictionDto).toList();
+    public List<MpaDto> getAllMpas() {
+        return filmStorage.getAllMpas().stream().map(MpaMapper::mapToMpaDto).toList();
     }
 
-    public AgeRestrictionDto getAgeRestrictionById(Long ageRestrictionId) {
-        return filmStorage.getAgeRestrictionById(ageRestrictionId).map(AgeRestrictionMapper::mapToAgeRestrictionDto).get();
+    public MpaDto getMpaById(Long mpaId) {
+        Optional<Mpa> mpa = filmStorage.getMpaById(mpaId);
+        if (mpa.isEmpty()) {
+            throw new NotFoundException("Возрастное ограничение с id = " + mpaId + " не найдено");
+        } else {
+            return mpa.map(MpaMapper::mapToMpaDto).get();
+        }
     }
 
 
@@ -141,9 +154,9 @@ public class FilmService {
         if (!userStorage.isUserExist(userId)) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
-        Set<Long> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
-        if (filmLikeIds.contains(userId)) {
-            throw new LikesManipulationException("Пользователь с id = " + userId + " уже лайкнул фильм с id = " + filmId);
+        List<User> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
+        if (filmLikeIds.contains(userStorage.getUserById(userId).get())) {
+            throw new LikesManipulationException("Пользователь с d = " + userId + " уже лайкнул фильм с id = " + filmId);
         }
         return true;
     }
@@ -161,7 +174,7 @@ public class FilmService {
         if (!userStorage.isUserExist(userId)) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
-        Set<Long> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
+        List<User> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
         if (!filmLikeIds.contains(userId)) {
             throw new LikesManipulationException("Фильм с id = " + filmId + " не состоит в избранном у пользователя " +
                     "с id = " + userId);
