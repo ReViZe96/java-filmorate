@@ -48,7 +48,7 @@ services:
           );
           CREATE TABLE IF NOT EXISTS Motion_Picture_Associations (
                       id serial PRIMARY KEY,
-                      name varchar(20),
+                      name varchar(20)
                       -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
                       -- description varchar(200)
           );
@@ -69,7 +69,7 @@ services:
                       CONSTRAINT description_max_length CHECK (char_length(description) <= 200),
                       CONSTRAINT duration CHECK (duration > 0)
           );
-          CREATE TABLE IF NOT EXIST Films_genres (
+          CREATE TABLE IF NOT EXISTS Films_genres (
                       id serial PRIMARY KEY,
                       film_id bigint REFERENCES Films(id),
                       genre_id bigint REFERENCES Genres(id)
