@@ -7,9 +7,11 @@ import lombok.Data;
 @Builder
 public class FilmGenre {
 
-    private final Long id;
-    private final String name;
-//    private final String englishName;
-//    private final String russianName;
+    private Long id;
+    private String name;
+
+    //для расширенной модели
+    //private String englishName;
+    //private String russianName;
 
 }

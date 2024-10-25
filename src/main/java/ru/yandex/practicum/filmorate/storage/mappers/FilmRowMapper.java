@@ -22,13 +22,13 @@ public class FilmRowMapper implements RowMapper<Film> {
         this.mpaDbStorage = mpaDbStorage;
     }
 
+
     @Override
     public Film mapRow(ResultSet resultSet, int rowNum) throws SQLException {
         LocalDate releaseDate = LocalDate.ofInstant(resultSet.getTimestamp("release_date").toInstant(),
                 ZoneId.systemDefault());
         Mpa mpa = mpaDbStorage.findById(resultSet.getLong("mpa_id")).get();
-
-        Film film = Film.builder()
+        return Film.builder()
                 .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
                 .description(resultSet.getString("description"))
@@ -36,6 +36,5 @@ public class FilmRowMapper implements RowMapper<Film> {
                 .duration(resultSet.getLong("duration"))
                 .mpa(mpa)
                 .build();
-        return film;
     }
 }

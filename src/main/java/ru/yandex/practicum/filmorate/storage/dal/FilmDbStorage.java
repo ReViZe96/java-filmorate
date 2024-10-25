@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.dal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -40,12 +41,13 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private static final String FIND_EXIST_FILM_LIKES_RELATIONS_QUERY = "SELECT user_id FROM User_likes WHERE " +
             "film_id = 1 and user_id = 2";
     private static final String INSERT_LIKE_QUERY = "INSERT INTO User_likes(film_id, user_id) VALUES (?, ?)";
-    private static final String DELETE_LIKE_QUERY = "DELETE * FROM User_likes where film_id = ? and user_id = ?";
+    private static final String DELETE_LIKE_QUERY = "DELETE FROM User_likes where film_id = ? and user_id = ?";
 
     private UserDbStorage userDbStorage;
     private FilmGenreDbStorage filmGenreDbStorage;
     private MpaDbStorage mpaDbStorage;
 
+    @Autowired
     public FilmDbStorage(JdbcTemplate jdbc, RowMapper<Film> mapper, UserDbStorage userDbStorage,
                          FilmGenreDbStorage filmGenreDbStorage, MpaDbStorage mpaDbStorage) {
         super(jdbc, mapper);
@@ -53,6 +55,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         this.filmGenreDbStorage = filmGenreDbStorage;
         this.mpaDbStorage = mpaDbStorage;
     }
+
 
     @Override
     public List<Film> getAll() {
@@ -90,7 +93,10 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         }
         if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
             for (FilmGenre genre : newFilm.getGenres()) {
-                insert(INSERT_FILMS_GENRES_QUERY, newFilm.getId(), genre.getId());
+                insert(INSERT_FILMS_GENRES_QUERY, filmId, genre.getId());
+                if (filmGenreDbStorage.getById(genre.getId()).isEmpty()) {
+                    filmGenreDbStorage.addGenre(genre);
+                }
             }
         }
         newFilm.setId(filmId);
@@ -189,17 +195,17 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         return mpaDbStorage.findById(mpaId);
     }
 
+
     private List<FilmGenre> getFilmGenres(Long filmId) {
         List<FilmGenre> filmGenres = new ArrayList<>();
         String query = FIND_GENRES_IDS_BY_FILM_ID_QUERY + filmId;
         Set<Long> genreIds = new HashSet<>();
         jdbc.query(query, (ResultSet rs) -> {
             while (rs.next()) {
-                genreIds.add(rs.getLong("film_id"));
+                genreIds.add(rs.getLong("genre_id"));
             }
             return genreIds;
         });
-
         for (Long genreId : genreIds) {
             filmGenres.add(filmGenreDbStorage.getById(genreId).get());
         }
@@ -208,14 +214,12 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
 
     private Optional<Mpa> isFieldsFromAnotherTablesValid(Film film) {
         Optional<Mpa> mpa = Optional.empty();
-
         if (film.getMpa() != null) {
             mpa = mpaDbStorage.findById(film.getMpa().getId());
             if (mpa.isEmpty()) {
                 throw new IncorrectGenreOrMpa("Возрастное ограничение не найдено");
             }
         }
-
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             for (FilmGenre genre : film.getGenres()) {
                 Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genre.getId());
@@ -224,7 +228,6 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                 }
             }
         }
-
         if (film.getLikes() != null && !film.getLikes().isEmpty()) {
             for (User userLiked : film.getLikes()) {
                 Optional<User> user = userDbStorage.getUserById(userLiked.getId());

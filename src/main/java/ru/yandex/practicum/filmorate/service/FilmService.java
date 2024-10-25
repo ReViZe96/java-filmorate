@@ -35,6 +35,7 @@ public class FilmService {
     private final UserStorage userStorage;
 
     @Autowired
+    //Значения @Qualifier для записи данных в оперативную память
     //filmInMemoryStorage
     //userInMemoryStorage
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
@@ -175,7 +176,7 @@ public class FilmService {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
         List<User> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
-        if (!filmLikeIds.contains(userId)) {
+        if (!filmLikeIds.contains(userStorage.getUserById(userId).get())) {
             throw new LikesManipulationException("Фильм с id = " + filmId + " не состоит в избранном у пользователя " +
                     "с id = " + userId);
         }

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode
 public class ErrorResponse {
+
     private String error;
 
     public ErrorResponse(String error) {

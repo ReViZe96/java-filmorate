@@ -34,4 +34,5 @@ public interface FilmStorage {
     Collection<Mpa> getAllMpas();
 
     Optional<Mpa> getMpaById(Long mpaId);
+
 }

@@ -15,13 +15,12 @@ public class UserRowMapper implements RowMapper<User> {
     public User mapRow(ResultSet resultSet, int rowNum) throws SQLException {
         LocalDate birthday = LocalDate.ofInstant(resultSet.getTimestamp("birthday").toInstant(),
                 ZoneId.systemDefault());
-        User user = User.builder()
+        return User.builder()
                 .id(resultSet.getLong("id"))
                 .email(resultSet.getString("email"))
                 .login(resultSet.getString("login"))
                 .name(resultSet.getString("name"))
                 .birthday(birthday)
                 .build();
-        return user;
     }
 }

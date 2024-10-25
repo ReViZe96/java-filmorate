@@ -42,18 +42,22 @@ services:
                       birthday date
           );
           CREATE TABLE IF NOT EXISTS Friend_relationship (
+                      id serial PRIMARY KEY,
                       accepting_friend_id  bigint REFERENCES Users(id),
                       subscribing_friend_id bigint REFERENCES Users(id)
           );
           CREATE TABLE IF NOT EXISTS Motion_Picture_Associations (
                       id serial PRIMARY KEY,
                       name varchar(20),
-                      description varchar(200)
+                      -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
+                      -- description varchar(200)
           );
           CREATE TABLE IF NOT EXISTS Genres (
                       id serial PRIMARY KEY,
-                      english_name varchar(50),
-                      russian_name varchar(100)
+                      name varchar(100)
+                      -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ (замена для поля name):
+                      -- english_name varchar(50),
+                      -- russian_name varchar(100)
           );
           CREATE TABLE IF NOT EXISTS Films (
                       id serial PRIMARY KEY,
@@ -66,25 +70,41 @@ services:
                       CONSTRAINT duration CHECK (duration > 0)
           );
           CREATE TABLE IF NOT EXIST Films_genres (
+                      id serial PRIMARY KEY,
                       film_id bigint REFERENCES Films(id),
                       genre_id bigint REFERENCES Genres(id)
           );
           CREATE TABLE IF NOT EXISTS User_likes (
+                      id serial PRIMARY KEY,
                       film_id bigint REFERENCES Films(id),
                       user_id bigint REFERENCES Users(id)
           );
         
-          insert into Motion_Picture_Associations(name, description) values ('G', 'Нет возрастных ограничений');
-          insert into Motion_Picture_Associations(name, description) values ('PG', 'Детям рекомендуется смотреть фильм с родителями');
-          insert into Motion_Picture_Associations(name, description) values ('PG_13', 'Детям до 13 лет просмотр не желателен');
-          insert into Motion_Picture_Associations(name, description) values ('R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого');
-          insert into Motion_Picture_Associations(name, description) values ('NC_17', 'Лицам до 18 лет просмотр запрещён');
+          -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
+          -- insert into Motion_Picture_Associations(name, description) values ('G', 'Нет возрастных ограничений');
+          -- insert into Motion_Picture_Associations(name, description) values ('PG', 'Детям рекомендуется смотреть фильм с родителями');
+          -- insert into Motion_Picture_Associations(name, description) values ('PG_13', 'Детям до 13 лет просмотр не желателен');
+          -- insert into Motion_Picture_Associations(name, description) values ('R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого');
+          -- insert into Motion_Picture_Associations(name, description) values ('NC_17', 'Лицам до 18 лет просмотр запрещён');
   
-          insert into genres (english_name, russian_name) values ('COMEDY', 'Комедия');
-          insert into genres (english_name, russian_name) values ('DRAMA', 'Драмма');
-          insert into genres (english_name, russian_name) values ('CARTOON', 'Мультфильм');
-          insert into genres (english_name, russian_name) values ('THRILLER', 'Триллер');
-          insert into genres (english_name, russian_name) values ('ACTION', 'Боевик');
-          insert into genres (english_name, russian_name) values ('SCIFI', 'Научная фантастика');
-          insert into genres (english_name, russian_name) values ('DOCUMENTARY', 'Документальное кино');
+          -- insert into genres (english_name, russian_name) values ('COMEDY', 'Комедия');
+          -- insert into genres (english_name, russian_name) values ('DRAMA', 'Драмма');
+          -- insert into genres (english_name, russian_name) values ('CARTOON', 'Мультфильм');
+          -- insert into genres (english_name, russian_name) values ('THRILLER', 'Триллер');
+          -- insert into genres (english_name, russian_name) values ('ACTION', 'Боевик');
+          -- insert into genres (english_name, russian_name) values ('SCIFI', 'Научная фантастика');
+          -- insert into genres (english_name, russian_name) values ('DOCUMENTARY', 'Документальное кино');
+        
+          insert into Motion_Picture_Associations (name) values ('G');
+          insert into Motion_Picture_Associations (name) values ('PG');
+          insert into Motion_Picture_Associations (name) values ('PG-13');
+          insert into Motion_Picture_Associations (name) values ('R');
+          insert into Motion_Picture_Associations (name) values ('NC-17');
+  
+          insert into Genres (name) values ('Комедия');
+          insert into Genres (name) values ('Драма');
+          insert into Genres (name) values ('Мультфильм');
+          insert into Genres (name) values ('Триллер');
+          insert into Genres (name) values ('Документальный');
+          insert into Genres (name) values ('Боевик');
         EOSQL

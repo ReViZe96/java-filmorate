@@ -1,9 +1,10 @@
+-- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
 --insert into Motion_Picture_Associations (name, description) values ('G', 'Нет возрастных ограничений');
 --insert into Motion_Picture_Associations (name, description) values ('PG', 'Детям рекомендуется смотреть фильм с родителями');
 --insert into Motion_Picture_Associations (name, description) values ('PG_13', 'Детям до 13 лет просмотр не желателен');
 --insert into Motion_Picture_Associations (name, description) values ('R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого');
 --insert into Motion_Picture_Associations (name, description) values ('NC_17', 'Лицам до 18 лет просмотр запрещён');
---
+
 --insert into Genres (english_name, russian_name) values ('COMEDY', 'Комедия');
 --insert into Genres (english_name, russian_name) values ('DRAMA', 'Драмма');
 --insert into Genres (english_name, russian_name) values ('CARTOON', 'Мультфильм');

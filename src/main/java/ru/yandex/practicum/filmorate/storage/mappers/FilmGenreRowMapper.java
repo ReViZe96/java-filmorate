@@ -14,8 +14,13 @@ public class FilmGenreRowMapper implements RowMapper<FilmGenre> {
         return FilmGenre.builder()
                 .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
-//                .englishName(resultSet.getString("english_name"))
-//                .russianName(resultSet.getString("russian_name"))
                 .build();
+
+        //для расширенной модели
+        //return FilmGenre.builder()
+        //      .id(resultSet.getLong("id"))
+        //      .englishName(resultSet.getString("english_name"))
+        //      .russianName(resultSet.getString("russian_name"))
+        //      .build();
     }
 }

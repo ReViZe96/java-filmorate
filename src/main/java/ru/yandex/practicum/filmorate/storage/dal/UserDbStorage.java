@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage.dal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -39,9 +40,11 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
     private static final String DELETE_FRIEND_RELATIONSHIP_QUERY = "DELETE FROM Friend_relationship " +
             "where accepting_friend_id = ? and subscribing_friend_id = ?";
 
+    @Autowired
     public UserDbStorage(JdbcTemplate jdbc, RowMapper<User> mapper) {
         super(jdbc, mapper);
     }
+
 
     @Override
     public List<User> getAll() {

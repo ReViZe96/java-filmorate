@@ -22,7 +22,7 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler(IncorrectGenreOrMpa.class)
+    @ExceptionHandler()
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleIncorrectGenreOrMpa(IncorrectGenreOrMpa e) {
         return new ErrorResponse(e.getMessage());
@@ -33,4 +33,5 @@ public class ErrorHandler {
     public ErrorResponse handleUnknownError(Throwable e) {
         return new ErrorResponse("Произошла непредвиденная ошибка");
     }
+
 }

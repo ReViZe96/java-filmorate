@@ -9,11 +9,12 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 public class MpaMapper {
 
     public static MpaDto mapToMpaDto(Mpa mpa) {
-        return new MpaDto(
-                mpa.getId(),
-                mpa.getName()
-//                mpa.getDescription()
-        );
+        return MpaDto.builder()
+                .id(mpa.getId())
+                .name(mpa.getName())
+                //для расширенной модели
+                //.description(mpa.getDescription())
+                .build();
     }
 
 }

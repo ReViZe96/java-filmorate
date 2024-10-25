@@ -25,6 +25,7 @@ public class UserService {
     private final UserStorage userStorage;
 
     @Autowired
+    //Значение @Qualifier для записи данных в оперативную память
     //userInMemoryStorage
     public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
@@ -80,15 +81,11 @@ public class UserService {
 
     public void deleteFromFriends(Long id, Long friendId) {
         isUsersCanBeRemovedFromFriend(id, friendId);
-        Set<Long> firstUserFriendsIds = userStorage.getUserFriendsIds(id);
-        Set<Long> secondUserFriendsIds = userStorage.getUserFriendsIds(friendId);
-        if (firstUserFriendsIds.contains(friendId)) {
+        Set<Long> userFriendsIds = userStorage.getUserFriendsIds(id);
+        if (userFriendsIds.contains(friendId)) {
             userStorage.removeFriend(id, friendId);
         }
-        if (secondUserFriendsIds.contains(id)) {
-            userStorage.removeFriend(friendId, id);
-        }
-        log.info("Пользователи с id = {} и id = {} больше не являются друзьями", id, friendId);
+        log.info("Пользователь с id = {} удален из друзей пользователем с id = {}", friendId, id);
     }
 
     public Set<UserDto> getUserFriends(Long id) {

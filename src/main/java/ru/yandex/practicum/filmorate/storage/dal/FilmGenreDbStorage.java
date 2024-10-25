@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.dal;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -11,19 +12,29 @@ import java.util.Optional;
 @Repository
 public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
 
-    private static final String FIND_ALL_GENRES_QUERY = "SELECT * FROM Genres";
+    private static final String FIND_ALL_QUERY = "SELECT * FROM Genres";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM Genres WHERE id = ?";
+    private static final String INSERT_GENRE_QUERY = "INSERT INTO Genres(name) VALUES (?)";
 
+    @Autowired
     public FilmGenreDbStorage(JdbcTemplate jdbc, RowMapper<FilmGenre> mapper) {
         super(jdbc, mapper);
     }
 
+
     public List<FilmGenre> getAll() {
-        return findMany(FIND_ALL_GENRES_QUERY);
+        return findMany(FIND_ALL_QUERY);
     }
 
     public Optional<FilmGenre> getById(Long genreId) {
         return findOne(FIND_BY_ID_QUERY, genreId);
+    }
+
+    public Optional<FilmGenre> addGenre(FilmGenre newGenre) {
+        Long genreId = insert(INSERT_GENRE_QUERY,
+                newGenre.getName());
+        newGenre.setId(genreId);
+        return Optional.of(newGenre);
     }
 
 }
