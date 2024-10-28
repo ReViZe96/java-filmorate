@@ -48,6 +48,7 @@ public class FilmGenreDbStorageTest {
     @Test
     public void shouldAddGenreTest() {
         FilmGenre scifi = FilmGenre.builder()
+                .id(7L)
                 .name("Научная фантастика")
                 .build();
 

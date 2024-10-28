@@ -51,6 +51,15 @@ public class BaseDbStorage<T> {
         }
     }
 
+    protected long insertWithKnownId(String query, Object... params) {
+        int rowsUpdated = jdbc.update(query, params);
+        if (rowsUpdated > 0) {
+            return Long.parseLong(params[0].toString());
+        } else {
+            throw new RuntimeException("Не удалось добавить данные");
+        }
+    }
+
     protected void update(String query, Object... params) {
         int rowsUpdated = jdbc.update(query, params);
         if (rowsUpdated == 0) {

@@ -15,7 +15,7 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
     private static final String FIND_ALL_QUERY = "SELECT * FROM Genres";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM Genres WHERE id = ?";
     private static final String FIND_BY_NAME_QUERY = "SELECT * FROM Genres WHERE name = ?";
-    private static final String INSERT_GENRE_QUERY = "INSERT INTO Genres(name) VALUES (?)";
+    private static final String INSERT_GENRE_QUERY = "INSERT INTO Genres(id, name) VALUES (?, ?)";
 
     @Autowired
     public FilmGenreDbStorage(JdbcTemplate jdbc, RowMapper<FilmGenre> mapper) {
@@ -36,7 +36,8 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
     }
 
     public Optional<FilmGenre> addGenre(FilmGenre newGenre) {
-        Long genreId = insert(INSERT_GENRE_QUERY,
+        Long genreId = insertWithKnownId(INSERT_GENRE_QUERY,
+                newGenre.getId(),
                 newGenre.getName());
         newGenre.setId(genreId);
         return Optional.of(newGenre);

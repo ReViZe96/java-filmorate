@@ -94,7 +94,8 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
             for (FilmGenre genre : newFilm.getGenres()) {
                 if (filmGenreDbStorage.getById(genre.getId()).isEmpty()) {
-                    if (genre.getName() != null && !genre.getName().isBlank()) {
+                    if (genre.getName() != null && !genre.getName().isBlank()
+                            && filmGenreDbStorage.getByName(genre.getName()).isEmpty()) {
                         filmGenreDbStorage.addGenre(genre);
                     }
                 } else {
