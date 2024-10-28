@@ -13,13 +13,6 @@ public class FilmGenreMapper {
                 .id(filmGenre.getId())
                 .name(filmGenre.getName())
                 .build();
-
-        //для расширенной модели
-        //return FilmGenreDto.builder()
-        //       .id(filmGenre.getId())
-        //       .englishName(filmGenre.getEnglishName())
-        //       .russianName(filmGenre.getRussianName())
-        //       .build();
     }
 
 }

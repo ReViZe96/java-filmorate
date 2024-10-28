@@ -2,9 +2,7 @@ package ru.yandex.practicum.filmorate.dto;
 
 import lombok.Builder;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.model.FilmGenre;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +15,7 @@ public class FilmDto {
     private String description;
     private LocalDate releaseDate;
     private Long duration;
-    private List<User> likes;
-    private List<FilmGenre> genres;
-    private Mpa mpa;
+    private List<UserDto> likes;
+    private List<FilmGenreDto> genres;
+    private MpaDto mpa;
 }

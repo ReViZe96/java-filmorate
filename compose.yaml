@@ -49,15 +49,10 @@ services:
           CREATE TABLE IF NOT EXISTS Motion_Picture_Associations (
                       id serial PRIMARY KEY,
                       name varchar(20)
-                      -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
-                      -- description varchar(200)
           );
           CREATE TABLE IF NOT EXISTS Genres (
                       id serial PRIMARY KEY,
                       name varchar(100)
-                      -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ (замена для поля name):
-                      -- english_name varchar(50),
-                      -- russian_name varchar(100)
           );
           CREATE TABLE IF NOT EXISTS Films (
                       id serial PRIMARY KEY,
@@ -80,36 +75,6 @@ services:
                       user_id bigint REFERENCES Users(id)
           );
         
-          -- ДЛЯ РАСШИРЕННОЙ МОДЕЛИ:
-          --insert into Motion_Picture_Associations(id, name, description)
-          --select 1, 'G', 'Нет возрастных ограничений'
-          --where not exists (select id from Motion_Picture_Associations where id = 1);
-          --insert into Motion_Picture_Associations(id, name, description)
-          --select 2, 'PG', 'Детям рекомендуется смотреть фильм с родителями'
-          --where not exists (select id from Motion_Picture_Associations where id = 2);
-          --insert into Motion_Picture_Associations(id, name, description)
-          --select 3, 'PG-13', 'Детям до 13 лет просмотр не желателен'
-          --where not exists (select id from Motion_Picture_Associations where id = 3);
-          --insert into Motion_Picture_Associations(id, name, description)
-          --select 4, 'R', 'Лицам до 17 лет просматривать фильм можно только в присутствии взрослого'
-          --where not exists (select id from Motion_Picture_Associations where id = 4);
-          --insert into Motion_Picture_Associations(id, name, description)
-          --select 5, 'NC-17', 'Лицам до 18 лет просмотр запрещён'
-          --where not exists (select id from Motion_Picture_Associations where id = 5);
-  
-          --insert into Genres(id, english_name, russian_name)
-          --select 1, 'COMEDY', 'Комедия' where not exists (select id from Genres where id = 1);
-          --insert into Genres(id, english_name, russian_name)
-          --select 2, 'DRAMA', 'Драмма' where not exists (select id from Genres where id = 2);
-          --insert into Genres(id, english_name, russian_name)
-          --select 3, 'CARTOON', 'Мультфильм' where not exists (select id from Genres where id = 3);
-          --insert into Genres(id, english_name, russian_name)
-          --select 4, 'THRILLER', 'Триллер' where not exists (select id from Genres where id = 4);
-          --insert into Genres(id, english_name, russian_name)
-          --select 5, 'DOCUMENTARY', 'Документальное кино' where not exists (select id from Genres where id = 5);
-          --insert into Genres(id, english_name, russian_name)
-          --select 6, 'ACTION', 'Боевик' where not exists (select id from Genres where id = 6);
-  
           insert into Motion_Picture_Associations(id, name)
           select 1, 'G' where not exists (select id from Motion_Picture_Associations where id = 1);
           insert into Motion_Picture_Associations(id, name)

@@ -10,8 +10,4 @@ public class FilmGenre {
     private Long id;
     private String name;
 
-    //для расширенной модели
-    //private String englishName;
-    //private String russianName;
-
 }

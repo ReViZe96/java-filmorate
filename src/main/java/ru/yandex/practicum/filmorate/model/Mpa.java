@@ -10,7 +10,4 @@ public class Mpa {
     private final Long id;
     private final String name;
 
-    //для расширенной модели
-    //private String description;
-
 }

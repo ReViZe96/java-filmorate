@@ -14,8 +14,6 @@ public class MpaRowMapper implements RowMapper<Mpa> {
         return Mpa.builder()
                 .id(resultSet.getLong("id"))
                 .name(resultSet.getString("name"))
-                //для расширенной модели
-                // .description(resultSet.getString("description"))
                 .build();
     }
 }

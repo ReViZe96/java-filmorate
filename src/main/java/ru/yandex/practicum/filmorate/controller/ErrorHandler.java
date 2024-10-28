@@ -24,7 +24,7 @@ public class ErrorHandler {
 
     @ExceptionHandler()
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleIncorrectGenreOrMpa(IncorrectGenreOrMpa e) {
+    public ErrorResponse handleIncorrectGenreOrMpa(IncorrectGenreOrMpaException e) {
         return new ErrorResponse(e.getMessage());
     }
 

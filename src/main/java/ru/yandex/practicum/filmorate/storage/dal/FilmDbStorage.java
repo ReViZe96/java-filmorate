@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.IncorrectGenreOrMpa;
+import ru.yandex.practicum.filmorate.exception.IncorrectGenreOrMpaException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -219,17 +219,17 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private Optional<Mpa> isFieldsFromAnotherTablesValid(Film film) {
         Optional<Mpa> mpa;
         if (film.getMpa() == null) {
-            throw new IncorrectGenreOrMpa("Возрастное ограничение не указано");
+            throw new IncorrectGenreOrMpaException("Возрастное ограничение не указано");
         } else {
             mpa = mpaDbStorage.findById(film.getMpa().getId());
             if (mpa.isEmpty()) {
-                throw new IncorrectGenreOrMpa("Возрастное ограничение не найдено");
+                throw new IncorrectGenreOrMpaException("Возрастное ограничение не найдено");
             }
             if (film.getGenres() != null && !film.getGenres().isEmpty()) {
                 for (FilmGenre genre : film.getGenres()) {
                     Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genre.getId());
                     if (filmGenre.isEmpty()) {
-                        throw new IncorrectGenreOrMpa("Жанр фильма не найден");
+                        throw new IncorrectGenreOrMpaException("Жанр фильма не найден");
                     }
                 }
             }

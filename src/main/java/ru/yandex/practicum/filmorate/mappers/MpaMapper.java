@@ -12,8 +12,6 @@ public class MpaMapper {
         return MpaDto.builder()
                 .id(mpa.getId())
                 .name(mpa.getName())
-                //для расширенной модели
-                //.description(mpa.getDescription())
                 .build();
     }
 

@@ -8,7 +8,4 @@ import lombok.Data;
 public class MpaDto {
     private Long id;
     private String name;
-
-    //для расширенной модели
-    //private String description;
 }
