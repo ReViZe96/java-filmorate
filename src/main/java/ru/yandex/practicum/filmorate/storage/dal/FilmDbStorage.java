@@ -93,9 +93,12 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         }
         if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
             for (FilmGenre genre : newFilm.getGenres()) {
-                insert(INSERT_FILMS_GENRES_QUERY, filmId, genre.getId());
                 if (filmGenreDbStorage.getById(genre.getId()).isEmpty()) {
-                    filmGenreDbStorage.addGenre(genre);
+                    if (genre.getName() != null && !genre.getName().isBlank()) {
+                        filmGenreDbStorage.addGenre(genre);
+                    }
+                } else {
+                    insert(INSERT_FILMS_GENRES_QUERY, filmId, genre.getId());
                 }
             }
         }
@@ -213,27 +216,29 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     }
 
     private Optional<Mpa> isFieldsFromAnotherTablesValid(Film film) {
-        Optional<Mpa> mpa = Optional.empty();
-        if (film.getMpa() != null) {
+        Optional<Mpa> mpa;
+        if (film.getMpa() == null) {
+            throw new IncorrectGenreOrMpa("Возрастное ограничение не указано");
+        } else {
             mpa = mpaDbStorage.findById(film.getMpa().getId());
             if (mpa.isEmpty()) {
                 throw new IncorrectGenreOrMpa("Возрастное ограничение не найдено");
             }
-        }
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (FilmGenre genre : film.getGenres()) {
-                Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genre.getId());
-                if (filmGenre.isEmpty()) {
-                    throw new IncorrectGenreOrMpa("Жанр фильма не найден");
+            if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+                for (FilmGenre genre : film.getGenres()) {
+                    Optional<FilmGenre> filmGenre = filmGenreDbStorage.getById(genre.getId());
+                    if (filmGenre.isEmpty()) {
+                        throw new IncorrectGenreOrMpa("Жанр фильма не найден");
+                    }
                 }
             }
-        }
-        if (film.getLikes() != null && !film.getLikes().isEmpty()) {
-            for (User userLiked : film.getLikes()) {
-                Optional<User> user = userDbStorage.getUserById(userLiked.getId());
-                if (user.isEmpty()) {
-                    throw new NotFoundException("Пользователь " + userLiked.getLogin() + " не мог поставить лайк фильму, т.к." +
-                            " данного пользователя не существует");
+            if (film.getLikes() != null && !film.getLikes().isEmpty()) {
+                for (User userLiked : film.getLikes()) {
+                    Optional<User> user = userDbStorage.getUserById(userLiked.getId());
+                    if (user.isEmpty()) {
+                        throw new NotFoundException("Пользователь " + userLiked.getLogin() + " не мог поставить лайк фильму, т.к." +
+                                " данного пользователя не существует");
+                    }
                 }
             }
         }

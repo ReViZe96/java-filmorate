@@ -38,6 +38,14 @@ public class FilmGenreDbStorageTest {
     }
 
     @Test
+    public void shouldGetGenreByNameTest() {
+        Assertions.assertEquals("Комедия", filmGenreDbStorage.getByName("Комедия").get().getName());
+        Assertions.assertEquals("Драма", filmGenreDbStorage.getByName("Драма").get().getName());
+        Assertions.assertEquals("Мультфильм", filmGenreDbStorage.getByName("Мультфильм").get().getName());
+
+    }
+
+    @Test
     public void shouldAddGenreTest() {
         FilmGenre scifi = FilmGenre.builder()
                 .name("Научная фантастика")

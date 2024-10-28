@@ -14,6 +14,7 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM Genres";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM Genres WHERE id = ?";
+    private static final String FIND_BY_NAME_QUERY = "SELECT * FROM Genres WHERE name = ?";
     private static final String INSERT_GENRE_QUERY = "INSERT INTO Genres(name) VALUES (?)";
 
     @Autowired
@@ -28,6 +29,10 @@ public class FilmGenreDbStorage extends BaseDbStorage<FilmGenre> {
 
     public Optional<FilmGenre> getById(Long genreId) {
         return findOne(FIND_BY_ID_QUERY, genreId);
+    }
+
+    public Optional<FilmGenre> getByName(String name) {
+        return findOne(FIND_BY_NAME_QUERY, name);
     }
 
     public Optional<FilmGenre> addGenre(FilmGenre newGenre) {
