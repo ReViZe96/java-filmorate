@@ -151,6 +151,4 @@ public class FilmControllerTest {
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.updateFilm(filmWithoutId));
     }
 
-    //TODO: FilmGenreController and MpaController methods test
-
 }
