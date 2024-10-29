@@ -1,10 +1,13 @@
 package ru.yandex.practicum.filmorate.storage.interfaces;
 
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface FilmStorage {
 
@@ -12,15 +15,24 @@ public interface FilmStorage {
 
     Optional<Film> getFilmById(Long id);
 
-    void addFilm(Film film);
+    Optional<Film> addFilm(Film film);
+
+    Optional<Film> updateFilm(Film film);
 
     boolean isFilmExist(Long filmId);
 
-    long getNextId();
+    List<User> getFilmLikeIds(Long id);
 
-    Set<Long> getFilmLikeIds(Long id);
+    Optional<Film> addLike(Long filmId, User user);
 
-    Film addLike(Long filmId, Long userId);
+    void removeLike(Long filmId, User user);
 
-    void removeLike(Long filmId, Long userId);
+    Collection<FilmGenre> getAllGenres();
+
+    Optional<FilmGenre> getGenreById(Long genreId);
+
+    Collection<Mpa> getAllMpas();
+
+    Optional<Mpa> getMpaById(Long mpaId);
+
 }

@@ -1,13 +1,23 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.MpaDto;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
+import ru.yandex.practicum.filmorate.dto.FilmGenreDto;
 import ru.yandex.practicum.filmorate.exception.LikesManipulationException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mappers.MpaMapper;
+import ru.yandex.practicum.filmorate.mappers.FilmGenreMapper;
+import ru.yandex.practicum.filmorate.mappers.FilmMapper;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 
@@ -15,7 +25,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class FilmService {
 
     private final Logger log = LoggerFactory.getLogger(FilmService.class);
@@ -25,70 +34,95 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
-
-    public Collection<Film> getAllFilms() {
-        return filmStorage.getAll();
+    @Autowired
+    //Значения @Qualifier для записи данных в оперативную память
+    //filmInMemoryStorage
+    //userInMemoryStorage
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("userDbStorage") UserStorage userStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
     }
 
-    public Film getFilmById(Long id) {
+
+    public List<FilmDto> getAllFilms() {
+        return filmStorage.getAll().stream().map(FilmMapper::mapToFilmDto).toList();
+    }
+
+    public FilmDto getFilmById(Long id) {
         Optional<Film> film = filmStorage.getFilmById(id);
         if (film.isPresent()) {
             log.info("Фильм {} найден", film.get().getName());
-            return film.get();
+            return film.map(FilmMapper::mapToFilmDto).get();
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
     }
 
-    public Film addFilm(Film film) {
-        boolean isFilmValid = isFilmValid(film);
+    public FilmDto addFilm(Film newFilm) {
+        Optional<Film> film = null;
+        boolean isFilmValid = isFilmValid(newFilm);
         if (isFilmValid) {
-            log.info("Добавляемый фильм {} валиден", film.getName());
-            film.setId(filmStorage.getNextId());
-            filmStorage.addFilm(film);
-            log.info("В систему добавлен новый фильм под названием: {}", film.getName());
+            log.info("Добавляемый фильм {} валиден", newFilm.getName());
+            film = filmStorage.addFilm(newFilm);
+            log.info("В систему добавлен новый фильм под названием: {}", film.get().getName());
         }
-        return film;
+        return film.map(FilmMapper::mapToFilmDto).get();
     }
 
-    public Film updateFilm(Film updatedFilm) {
+    public FilmDto updateFilm(Film updatedFilm) {
         if (updatedFilm.getId() == null) {
             throw new ValidationException("Id должен быть указан");
         }
-        if (filmStorage.isFilmExist(updatedFilm.getId())) {
-            Film oldFilm = filmStorage.getFilmById(updatedFilm.getId()).get();
-            log.info("Обновляемый фильм {} найден", oldFilm.getName());
-            oldFilm.setName(updatedFilm.getName());
-            oldFilm.setDescription(updatedFilm.getDescription());
-            oldFilm.setReleaseDate(updatedFilm.getReleaseDate());
-            oldFilm.setDuration(updatedFilm.getDuration());
-            if (updatedFilm.getLikes() == null) {
-                oldFilm.setLikes(new HashSet<>());
-            } else {
-                oldFilm.setLikes(updatedFilm.getLikes());
-            }
-            log.info("В системе обновлены данные о фильме под названием: {}", updatedFilm.getName());
-            return oldFilm;
-        } else {
+        if (!filmStorage.isFilmExist(updatedFilm.getId())) {
             throw new NotFoundException("Фильм с id = " + updatedFilm.getId() + " не найден");
+        } else {
+            Optional<Film> film = filmStorage.updateFilm(updatedFilm);
+            return film.map(FilmMapper::mapToFilmDto).get();
         }
     }
 
-    public Film addLikeToFilm(Long filmId, Long userId) {
+    public FilmDto addLikeToFilm(Long filmId, Long userId) {
         isLikeCanBeAdded(filmId, userId);
-        return filmStorage.addLike(filmId, userId);
+        return filmStorage.addLike(filmId, userStorage.getUserById(userId).get()).map(FilmMapper::mapToFilmDto).get();
     }
 
     public void deleteLikeFromFilm(Long filmId, Long userId) {
         isLikeCanBeDeleted(filmId, userId);
-        filmStorage.removeLike(filmId, userId);
+        filmStorage.removeLike(filmId, userStorage.getUserById(userId).get());
     }
 
-    public List<Film> getMostPopularFilms(int count) {
+    public List<FilmDto> getMostPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Размер выборки должен быть больше нуля");
         }
-        return filmStorage.getAll().stream().sorted(Film::compareTo).limit(count).toList();
+        return filmStorage.getAll().stream().sorted(Film::compareTo).limit(count).map(FilmMapper::mapToFilmDto).toList();
+    }
+
+    public List<FilmGenreDto> getAllGenres() {
+        return filmStorage.getAllGenres().stream().map(FilmGenreMapper::mapToFilmGenreDto).toList();
+    }
+
+    public FilmGenreDto getGenreById(Long genreId) {
+        Optional<FilmGenre> genre = filmStorage.getGenreById(genreId);
+        if (genre.isEmpty()) {
+            throw new NotFoundException("Жанр с id = " + genreId + " не найден");
+        } else {
+            return genre.map(FilmGenreMapper::mapToFilmGenreDto).get();
+        }
+    }
+
+    public List<MpaDto> getAllMpas() {
+        return filmStorage.getAllMpas().stream().map(MpaMapper::mapToMpaDto).toList();
+    }
+
+    public MpaDto getMpaById(Long mpaId) {
+        Optional<Mpa> mpa = filmStorage.getMpaById(mpaId);
+        if (mpa.isEmpty()) {
+            throw new NotFoundException("Возрастное ограничение с id = " + mpaId + " не найдено");
+        } else {
+            return mpa.map(MpaMapper::mapToMpaDto).get();
+        }
     }
 
 
@@ -121,9 +155,9 @@ public class FilmService {
         if (!userStorage.isUserExist(userId)) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
-        Set<Long> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
-        if (filmLikeIds.contains(userId)) {
-            throw new LikesManipulationException("Пользователь с id = " + userId + " уже лайкнул фильм с id = " + filmId);
+        List<User> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
+        if (filmLikeIds.contains(userStorage.getUserById(userId).get())) {
+            throw new LikesManipulationException("Пользователь с d = " + userId + " уже лайкнул фильм с id = " + filmId);
         }
         return true;
     }
@@ -141,8 +175,8 @@ public class FilmService {
         if (!userStorage.isUserExist(userId)) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
-        Set<Long> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
-        if (!filmLikeIds.contains(userId)) {
+        List<User> filmLikeIds = filmStorage.getFilmLikeIds(filmId);
+        if (!filmLikeIds.contains(userStorage.getUserById(userId).get())) {
             throw new LikesManipulationException("Фильм с id = " + filmId + " не состоит в избранном у пользователя " +
                     "с id = " + userId);
         }

@@ -1,0 +1,95 @@
+# docker compose для БД при работе с postgres
+services:
+  db:
+    image: postgres:16.1
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=filmsdb
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=12345
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+    # ещё один сервис
+  db-init:
+    image: postgres:16.1
+    container_name: db-init
+    # секция для указания зависимостей от других сервисов
+    depends_on:
+      # указываем, что этот сервис зависит от сервиса с именем db
+      db:
+        # указываем, что условием запуска будет момент, когда
+        # сервис db будет в «здоровом» состоянии
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        psql postgresql://dbuser:12345@db:5432/filmsdb -v ON_ERROR_STOP=1 <<-EOSQL
+          CREATE TABLE IF NOT EXISTS Users (
+                      id serial PRIMARY KEY,
+                      email varchar(100) NOT NULL,
+                      login varchar(50) NOT NULL,
+                      name varchar(100),
+                      birthday date
+          );
+          CREATE TABLE IF NOT EXISTS Friend_relationship (
+                      id serial PRIMARY KEY,
+                      accepting_friend_id  bigint REFERENCES Users(id),
+                      subscribing_friend_id bigint REFERENCES Users(id)
+          );
+          CREATE TABLE IF NOT EXISTS Motion_Picture_Associations (
+                      id serial PRIMARY KEY,
+                      name varchar(20)
+          );
+          CREATE TABLE IF NOT EXISTS Genres (
+                      id serial PRIMARY KEY,
+                      name varchar(100)
+          );
+          CREATE TABLE IF NOT EXISTS Films (
+                      id serial PRIMARY KEY,
+                      name varchar(100) NOT NULL,
+                      description varchar(200),
+                      release_date date,
+                      duration bigint,
+                      mpa_id bigint REFERENCES Motion_Picture_Associations(id),
+                      CONSTRAINT description_max_length CHECK (char_length(description) <= 200),
+                      CONSTRAINT duration CHECK (duration > 0)
+          );
+          CREATE TABLE IF NOT EXISTS Films_genres (
+                      id serial PRIMARY KEY,
+                      film_id bigint REFERENCES Films(id),
+                      genre_id bigint REFERENCES Genres(id)
+          );
+          CREATE TABLE IF NOT EXISTS User_likes (
+                      id serial PRIMARY KEY,
+                      film_id bigint REFERENCES Films(id),
+                      user_id bigint REFERENCES Users(id)
+          );
+        
+          insert into Motion_Picture_Associations(id, name)
+          select 1, 'G' where not exists (select id from Motion_Picture_Associations where id = 1);
+          insert into Motion_Picture_Associations(id, name)
+          select 2, 'PG' where not exists (select id from Motion_Picture_Associations where id = 2);
+          insert into Motion_Picture_Associations(id, name)
+          select 3, 'PG-13' where not exists (select id from Motion_Picture_Associations where id = 3);
+          insert into Motion_Picture_Associations(id, name)
+          select 4, 'R' where not exists (select id from Motion_Picture_Associations where id = 4);
+          insert into Motion_Picture_Associations(id, name)
+          select 5, 'NC-17' where not exists (select id from Motion_Picture_Associations where id = 5);
+  
+          insert into Genres(id, name) select 1, 'Комедия' where not exists (select id from Genres where id = 1);
+          insert into Genres(id, name) select 2, 'Драма' where not exists (select id from Genres where id = 2);
+          insert into Genres(id, name) select 3, 'Мультфильм' where not exists (select id from Genres where id = 3);
+          insert into Genres(id, name) select 4, 'Триллер' where not exists (select id from Genres where id = 4);
+          insert into Genres(id, name) select 5, 'Документальный' where not exists (select id from Genres where id = 5);
+          insert into Genres(id, name) select 6, 'Боевик' where not exists (select id from Genres where id = 6);
+        EOSQL

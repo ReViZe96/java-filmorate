@@ -2,14 +2,17 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mappers.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Optional;
 
 public class FilmControllerTest {
 
@@ -25,13 +28,13 @@ public class FilmControllerTest {
                 .description("Хороший фильм")
                 .releaseDate(LocalDate.of(2009, 9, 18))
                 .duration(8280L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertTrue(filmStorage.getSavedFilms().isEmpty());
         Assertions.assertDoesNotThrow(() -> filmController.addFilm(mrNobody));
         Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmStorage.getSavedFilms().contains(mrNobody));
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(Optional.of(mrNobody).map(FilmMapper::mapToFilmDto).get()));
     }
 
     @Test
@@ -41,14 +44,14 @@ public class FilmControllerTest {
                 .description("Фильм с пустым названием")
                 .releaseDate(LocalDate.now())
                 .duration(360L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
         Film filmWithNullName = Film.builder()
                 .name(null)
                 .description("Фильм без названия")
                 .releaseDate(LocalDate.now())
                 .duration(720L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithEmptyName));
@@ -65,7 +68,7 @@ public class FilmControllerTest {
                         "Основано на реальных событиях.")
                 .releaseDate(LocalDate.now())
                 .duration(7600L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithLongDescription));
@@ -78,7 +81,7 @@ public class FilmControllerTest {
                 .description("Поезд не приехал")
                 .releaseDate(LocalDate.of(1895, 12, 27))
                 .duration(180L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmCreatedBeforeLumersBrothers));
@@ -91,14 +94,14 @@ public class FilmControllerTest {
                 .description("Фильм, просматривающийся в прошлое")
                 .releaseDate(LocalDate.now())
                 .duration(-7000L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
         Film filmWithNullDuration = Film.builder()
                 .name("Самый короткий фильм")
                 .description("Фильм, состоящий из 11 кадров")
                 .releaseDate(LocalDate.now())
                 .duration(0L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.addFilm(filmWithNegativeDuration));
@@ -113,10 +116,10 @@ public class FilmControllerTest {
                 .description("Фильм, который потом обновим")
                 .releaseDate(LocalDate.now())
                 .duration(1000L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
-        Film addedFilm = filmController.addFilm(addingFilm);
+        FilmDto addedFilm = filmController.addFilm(addingFilm);
 
         Film updatingFilm = Film.builder()
                 .id(addedFilm.getId())
@@ -124,7 +127,7 @@ public class FilmControllerTest {
                 .description("Фильм, который обновили")
                 .releaseDate(LocalDate.of(1996, 10, 5))
                 .duration(10000L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
@@ -132,7 +135,7 @@ public class FilmControllerTest {
 
         Assertions.assertDoesNotThrow(() -> filmController.updateFilm(updatingFilm));
         Assertions.assertEquals(filmStorage.getSavedFilms().size(), 1);
-        Assertions.assertTrue(filmStorage.getSavedFilms().contains(updatingFilm));
+        Assertions.assertTrue(filmStorage.getSavedFilms().contains(Optional.of(updatingFilm).map(FilmMapper::mapToFilmDto).get()));
     }
 
     @Test
@@ -142,7 +145,7 @@ public class FilmControllerTest {
                 .description("Фильм, без Id, который хочется обновить")
                 .releaseDate(LocalDate.now())
                 .duration(2000L)
-                .likes(new HashSet<>())
+                .likes(new ArrayList<>())
                 .build();
 
         Assertions.assertThrowsExactly(ValidationException.class, () -> filmController.updateFilm(filmWithoutId));

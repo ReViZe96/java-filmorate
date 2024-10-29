@@ -8,7 +8,7 @@ import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 
 import java.util.*;
 
-@Component
+@Component("userInMemoryStorage")
 public class InMemoryUserStorage implements UserStorage {
 
     private final Logger log = LoggerFactory.getLogger(InMemoryUserStorage.class);
@@ -26,11 +26,30 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public void addUser(User user) {
+    public Optional<User> addUser(User user) {
         if (user.getFriends() == null) {
             user.setFriends(new HashSet<>());
         }
+        user.setId(getNextId());
         users.put(user.getId(), user);
+        return Optional.of(user);
+    }
+
+    @Override
+    public Optional<User> updateUser(User updatedUser) {
+        User oldUser = users.get(updatedUser.getId());
+        log.info("Обновляемый пользователь {} найден", updatedUser.getLogin());
+        oldUser.setEmail(updatedUser.getEmail());
+        oldUser.setLogin(updatedUser.getLogin());
+        oldUser.setName(updatedUser.getName());
+        oldUser.setBirthday(updatedUser.getBirthday());
+        if (updatedUser.getFriends() == null) {
+            oldUser.setFriends(new HashSet<>());
+        } else {
+            oldUser.setFriends(updatedUser.getFriends());
+        }
+        log.info("В системе обновлены данные о пользователе с логином: {}", updatedUser.getLogin());
+        return Optional.of(oldUser);
     }
 
     @Override
@@ -44,7 +63,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User addFriend(Long id, Long friendId) {
+    public Optional<User> addFriend(Long id, Long friendId) {
         User firstUser = getUserById(id).get();
         User secondUser = getUserById(friendId).get();
         Set<Long> firstUserFriends = getUserFriendsIds(id);
@@ -54,7 +73,7 @@ public class InMemoryUserStorage implements UserStorage {
         firstUser.setFriends(firstUserFriends);
         secondUser.setFriends(secondUserFriends);
         log.info("Пользователь с id = {} добавлен в друзья пользователя с id = {}", friendId, id);
-        return firstUser;
+        return Optional.of(firstUser);
     }
 
     @Override
@@ -65,7 +84,7 @@ public class InMemoryUserStorage implements UserStorage {
         user.setFriends(friends);
     }
 
-    @Override
+
     public long getNextId() {
         long currentMaxId = users.keySet()
                 .stream()

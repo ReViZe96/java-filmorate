@@ -12,15 +12,16 @@ public interface UserStorage {
 
     Optional<User> getUserById(Long id);
 
-    long getNextId();
+    Optional<User> addUser(User user);
 
-    void addUser(User user);
+    Optional<User> updateUser(User user);
 
     boolean isUserExist(Long userId);
 
     Set<Long> getUserFriendsIds(Long id);
 
-    User addFriend(Long id, Long friendId);
+    Optional<User> addFriend(Long id, Long friendId);
 
     void removeFriend(Long id, Long friendId);
+
 }

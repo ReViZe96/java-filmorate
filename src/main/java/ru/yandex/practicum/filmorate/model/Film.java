@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,7 +15,9 @@ public class Film implements Comparable<Film> {
     private String description;
     private LocalDate releaseDate;
     private Long duration;
-    private Set<Long> likes;
+    private List<User> likes;
+    private List<FilmGenre> genres;
+    private Mpa mpa;
 
     @Override
     public int compareTo(Film film) {
